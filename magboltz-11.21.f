@@ -81136,7 +81136,10 @@ C USE SCALED WATER DIPOLE ELASTIC CROSS SECTION  = 1/ENERGY
 C  FROM 0 TO x1 EV
       IF (EN.LT.XEL(1)) THEN
        QMMT=YMT(1)*1.D-16
+C NIMBOLTZ FIX MB-11: EPSIL WAS UNDEFINED BELOW XEL(1); USE TABLE VALUE
+C               AT XEL(1)
        QELA=YEL(1)*1.D-16
+       EPSIL=1.0-YEPS(1)
        GO TO 30
       ENDIF
       DO 20 J=2,NEL                                                     
