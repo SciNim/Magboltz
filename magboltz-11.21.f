@@ -30918,7 +30918,9 @@ C IONISATION CHARGE STATE =2
  3200 QION(2,I)=0.0
       PEQION(2,I)=0.5D0
       IF(NANISO.EQ.2) PEQION(2,I)=0.0D0                            
-      IF(EN.LE.EION(2)) GO TO 3350    
+C NIMBOLTZ FIX MB-12: WAS GO TO 3350, SKIPPING QION(3,I)=0 AND Q456=0;
+C               EVERY OTHER CHARGE STATE JUMPS TO THE NEXT SECTION
+      IF(EN.LE.EION(2)) GO TO 3250
       IF(EN.GT.XIN2(NION2)) GO TO 3221                                 
       DO 3210 J=2,NION2                                                 
       IF(EN.LE.XIN2(J)) GO TO 3220                                      
