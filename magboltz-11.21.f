@@ -62049,7 +62049,9 @@ C
       QIN(5,I)=0.0                                                      
       IF(EN.LE.EIN(5)) GO TO 700                                        
       DO 610 J=2,NEXC1                                                  
-      IF(EN.LE.XEXC(J)) GO TO 620                                       
+C NIMBOLTZ FIX MB-02: SEARCH THE XEXC1 GRID THAT IS INTERPOLATED BELOW
+C               (WAS XEXC)
+      IF(EN.LE.XEXC1(J)) GO TO 620
   610 CONTINUE                                                          
       J=NEXC1                                                           
   620 A=(YEXC1(J)-YEXC1(J-1))/(XEXC1(J)-XEXC1(J-1))                     
