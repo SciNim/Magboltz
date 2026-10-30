@@ -42202,7 +42202,9 @@ C XVIB1(NVIB1) EV )
       GOTO 174
   173 QIN(211,I)=YVIB1(NVIB1)*(XVIB1(NVIB1)/(EN+EIN(212)))/EN
   174 QIN(211,I)=QIN(211,I)*APOPV1*1.D-16        
-      PEQIN(211,I)=PEQEL(2,(I-IOFFN(211)))
+C NIMBOLTZ FIX MB-07: SUPERELASTIC HAS NO THRESHOLD, I-IOFFN<1 FOR
+C               EN<=|EIN|
+      IF(EN.GT.DABS(EIN(211))) PEQIN(211,I)=PEQEL(2,(I-IOFFN(211)))
   180 CONTINUE
 C  VIBRATION   BEND  V2 (DIPOLE 1/E FALL OFF ABOVE ENERGY OF
 C  XVIB1(NVIB1) EV )
@@ -73125,7 +73127,9 @@ C
       ARES=AMPV1R*(EN+EIN(54))*(A*(EN+EIN(54))+B)/EN
   403 QIN(53,I)=QIN(53,I)+ARES           
       QIN(53,I)=QIN(53,I)*APOP2/(1.0+APOP2)*1.D-16 
-      PEQIN(53,I)=PEQEL(2,(I-IOFFN(53)))                    
+C NIMBOLTZ FIX MB-07: SUPERELASTIC HAS NO THRESHOLD, I-IOFFN<1 FOR
+C               EN<=|EIN|
+      IF(EN.GT.DABS(EIN(53))) PEQIN(53,I)=PEQEL(2,(I-IOFFN(53)))
 C INELASTIC V1                                                                                  
   405 IF(EN.LE.EIN(54)) GO TO 410   
       EFAC=DSQRT(1.0-(EIN(54)/EN))                                      
