@@ -1,3 +1,4 @@
 build/
 *.o
 *~
+harness/rng/rng_extract.f
