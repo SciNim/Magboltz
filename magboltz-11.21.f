@@ -3795,7 +3795,8 @@ C -------------------------------------------------------------------
       IEXTRA=0
 C GENERATE INITIAL RANDOM NUMBER FOR MAXWELL BOLTZMAN
       CALL GERJAN
-      IMBTP=0
+C NIMBOLTZ FIX MB-05: WAS IMBTP=0 (TYPO), LEAVING IMBPT UNDEFINED
+      IMBPT=0
       TDASH=0.0D0 
       F4=2.0D0*DACOS(-1.0D0)
       CONST9=CONST3*0.01D0     
