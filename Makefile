@@ -1,5 +1,7 @@
 # Reference Fortran builds: fixed flags, no FMA / fast-math (see PORTING_NOTES.md)
-FC     ?= gfortran
+ifeq ($(origin FC),default)
+FC = gfortran
+endif
 FFLAGS  = -O0 -ffp-contract=off -std=legacy
 VERSIONS = 11.19 11.21
 
