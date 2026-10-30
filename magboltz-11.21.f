@@ -82194,7 +82194,11 @@ C
       Q(2,I)=0.0
 C USE LOG INTERPOLATION BECAUSE OF RAPID CHANGE IN X-SEC
       IF(EN.LE.XEN(2)) THEN
+C NIMBOLTZ FIX MB-06: PQ1,PQ2 WERE UNDEFINED HERE; ISOTROPIC = VALUES AT
+C               XEN(2)
        Q(2,I)=YELM(2)*1.D-16
+       PQ1=0.5
+       PQ2=0.0
        GO TO 30
       ENDIF
       DO 10 J=2,NDATA                                                   
