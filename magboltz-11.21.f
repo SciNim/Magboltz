@@ -61355,7 +61355,9 @@ C   J 3SIGMA
       QIN(146,I)=(A*EN+B)*1.D-18               
       GO TO 559  
   558 QIN(146,I)=YEXC9(NEXC9)*(XEXC9(NEXC9)/EN)**1.5*1.D-18            
-  559 PEQIN(146,I)=PEQEL(1,(I-IOFFN(146))) 
+C NIMBOLTZ FIX MB-18: WAS PEQEL(1,...) (UNDEFINED ROW); ALL OTHER LEVELS
+C               USE PEQEL(2)
+  559 PEQIN(146,I)=PEQEL(2,(I-IOFFN(146)))
   560 CONTINUE
 C------------------------------------------------------------------
 C  C 1SIGMA V=0     F=0.11236                                                       
