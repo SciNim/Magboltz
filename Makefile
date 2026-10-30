@@ -2,7 +2,7 @@
 ifeq ($(origin FC),default)
 FC = gfortran
 endif
-FFLAGS  = -O0 -ffp-contract=off -std=legacy
+FFLAGS  = -O0 -ffp-contract=off -std=legacy -finit-local-zero
 VERSIONS = 11.19 11.21
 
 all: $(VERSIONS:%=build/magboltz-%) build/rngdump
