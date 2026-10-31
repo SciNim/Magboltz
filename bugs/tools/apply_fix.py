@@ -270,5 +270,11 @@ elif fx=='MB-37':
     edit('MONTEBT','      DIMENSION XST(1000000),YST(1000000),ZST(1000000),STO(1000000)',
          ['      DIMENSION XST(2000000),YST(2000000),ZST(2000000),STO(2000000)'],
          ['MB-37: WAS 1000000; SETUP SETS NCOLM UP TO 2000000 (ALL OTHER','MONTE* USE 2000000)'])
+elif fx=='MB-38':
+    for r in ['MONTET','MONTEAT','MONTEBT','MONTECT','MONTEFTT','MONTEFDT',
+              'MONTEFTGT','MONTEFTHT','MONTEFTAT']:
+        edit(r,'       EI=E-0.024999',['       EI=EOK-0.024999'],
+             ['MB-38: WAS E (LAB FRAME); THE INCIDENT ENERGY OF THE',
+              'COLLISION IS EOK (REST FRAME OF THE GAS MOLECULE)'])
 else: sys.exit('unknown fix')
 open(F,'w').write('\n'.join(L))

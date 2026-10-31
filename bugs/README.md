@@ -2,7 +2,7 @@
 
 Source: `magboltz-11.21.f` (S. Biagi; the program prints `VERSION 11.20`),
 branch `master` of this repository. Line numbers below refer to that file.
-Branch `fixes` has one commit per defect (`MB-01` … `MB-37`); every change,
+Branch `fixes` has one commit per defect (`MB-01` … `MB-38`); every change,
 except the 281 loop starts of MB-10, carries a `C NIMBOLTZ FIX MB-nn:` comment.
 
 The defects were found while porting Magboltz to Nim with the requirement
@@ -57,6 +57,7 @@ a guess, this is said explicitly ("Interpretation").
 | MB-35 | MIXER | gas 6 with several attachments | `NATT5`/`QATT5` for 6 | always | none (QATT sums are never read) |
 | MB-36 | MIXERT | any, thermal | sums reset inside the gas loop | always | FRIEDLAND ionisation/attachment of the last gas only |
 | MB-37 | MONTEBT | any, thermal, B⊥E | arrays of 1000000 for NCOLM=2000000 | long decorrelation length | stored positions overwritten: diffusion garbage (DIFXX 10²¹ cm²/s) |
+| MB-38 | MONTE*T, MONTEF*T (9 thermal routines) | HFO-1234ze, C4F7N, CF3Br | lab-frame energy for a rest-frame loss | moderation collision, thermal | residual energy EOK−E+0.025 eV instead of 0.025 eV; 1E-20 eV in MONTEF*T |
 
 Affected gases (cross sections or angular distributions): Xe (7), propane
 (10), isobutane (11, diagnostic only), H2O (14), O2 (15), N2O (18,
@@ -67,7 +68,8 @@ n-propanol (46), para-H2 (47), ortho-D2 (48), C4F7N (49), SiH4 (60), CCl4
 MB-23, MB-28) and every high-field calculation with a magnetic field not
 parallel to E (MB-24), every 0 K mixture of two or more
 gases (MB-31) every thermal calculation at high field (MB-34, MB-36) and every thermal
-B⊥E calculation with the long decorrelation length (MB-37).
+B⊥E calculation with the long decorrelation length (MB-37), and
+thermal calculations with HFO-1234ze, C4F7N or CF3Br (MB-38).
 
 ## Impact on results
 
@@ -515,6 +517,31 @@ DIFXX 0.2263D+22 instead of 0.1627D+04 cm²/s, DIFYY 0.3587D+05 instead of
 0.1223D+04, DIFZZ 0.2231D+05 instead of 0.2076D+03; drift velocity and mean
 energy are unchanged. Fix: dimension 2000000.
 
+### MB-38 Thermal MONTE routines: moderation loss from the lab-frame energy
+
+Since 11.20 a collision with the energy loss EIN = 0.024999 eV (vibration
+moderation: GAS45 HFO-1234ze level 13, line 83344; GAS49 C4F7N level 13,
+line 92906; GAS51 CF3Br level 5, line 94468) takes all of the incident
+energy but 0.024999 eV: `IF(ABS(EI-0.024999).LE.1D-4) EI=E-0.024999`.
+In the nine thermal routines the collision is computed in the rest frame
+of the gas molecule, where the incident energy is EOK; E is the energy in
+the lab frame (MONTET 3027, MONTEAT 3527, MONTEBT 3929, MONTECT 4382,
+MONTEFTT 5566, MONTEFDT 6422, MONTEFTGT 7634, MONTEFTHT 8577, MONTEFTAT
+9545). The residual energy is then EOK − E + 0.025 eV instead of 0.025 eV.
+When E exceeds EOK by more than 0.025 eV the loss exceeds the collision
+energy: MONTE*T clamp it afterwards (`EOK.LT.EI`), leaving 0.0001 eV;
+MONTEF*T test `EOK.LT.EI` before the catch, so the electron leaves with
+SMALL = 1E-20 eV. Fix: `EI=EOK-0.024999`.
+
+The effect on transport results is small in the cases tried (thermal,
+20 °C, 760 Torr, NSCALE/100): in pure HFO-1234ze and C4F7N at 100 and
+1000 V/cm the results are identical (the moderation level is not
+reached); pure CF3Br, drift 0.5613 → 0.5628 µm/ns (±20%) at 100 V/cm and
+5.371 → 5.431 µm/ns (±2.5%) at 1 kV/cm, mean energy unchanged. Ar/CF3Br
+90/10 at 1 kV/cm (NSCALE/10, with SST and TOF): drift 64.23 µm/ns in both,
+attachment 4673 → 4671 /cm (±0.18%), TOF drift 87.87 → 88.06 µm/ns
+(±0.2–0.3%).
+
 ## Inconsistencies left unchanged
 
 - When the energy loss exceeds the energy (`E.LT.EI`) just before the
@@ -529,6 +556,12 @@ energy are unchanged. Fix: dimension 2000000.
 - Only MONTE and MONTET (B=0) stop with "ENERGY OUT OF RANGE" when more
   than 1000·J1 collisions fall into the last energy bin; with a magnetic
   field the run goes on with an energy range that is too small.
+- The ELIMIT routines have no moderation catch (MB-38): there a level with
+  EIN = 0.024999 eV loses 0.025 eV, so the search for EFINAL sees hotter
+  electrons than MONTE and may choose a larger energy range. Harmless.
+- B ∥ E at BTHETA = −180°: ELIMIT tests `DABS(BTHETA).EQ.180` and runs
+  ELIMIT (B = 0), MONTE tests `BTHETA.EQ.180` and runs MONTEC (any angle)
+  instead of MONTEA. Both give the B ∥ E motion; only the rounding differs.
 
 ## Not defects
 
