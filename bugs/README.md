@@ -2,7 +2,7 @@
 
 Source: `magboltz-11.21.f` (S. Biagi; the program prints `VERSION 11.20`),
 branch `master` of this repository. Line numbers below refer to that file.
-Branch `fixes` has one commit per defect (`MB-01` … `MB-23`); every change,
+Branch `fixes` has one commit per defect (`MB-01` … `MB-29`); every change,
 except the 281 loop starts of MB-10, carries a `C NIMBOLTZ FIX MB-nn:` comment.
 
 The defects were found while porting Magboltz to Nim with the requirement
@@ -43,13 +43,21 @@ a guess, this is said explicitly ("Interpretation").
 | MB-21 | GAS49 | C4F7N | NIN copied from GAS45 | always / EFINAL > 1 keV | 3 empty levels; bremsstrahlung in the wrong levels |
 | MB-22 | GAS30 | SF6 | `Q(2,I)` for `QIN(2,I)` | always | V4 anisotropy negative → always backward |
 | MB-23 | MONTEB, MONTEBT | any, B⊥E | 0/0 | always | error of DIFXX printed as NaN |
+| MB-24 | MONTEFTG, MONTEFTH | any, B⊥E / B at angle, high field | typos `DCYS`, `*` for `+` | ionisations | secondary-electron directions from stack contents |
+| MB-25 | GAS9, GAS19 | ethane, ethene | undefined loop bound NBRM | EN > 1 keV | bremsstrahlung 20–60× too small (if NBRM=0) |
+| MB-26 | GAS23 | CO | undefined loop bound N2XC5 | 6.8–20 eV | A3Π v=4 cross section from wrong interval (×3 at 7.6 eV) |
+| MB-27 | GAS43, GAS60 | C2H2F4, SiH4 | undefined names in fall-through | never | none |
+| MB-28 | MONTEFTG, MONTEFTGT | any, B⊥E, high field | Penning test `.EQ.` for `.NE.` | IPEN=1 | no Penning transfer at all |
+| MB-29 | ELIMITBT | any, B⊥E, thermal | clamp stored in unused DCZ2 | rounding | none in practice |
 
 Affected gases (cross sections or angular distributions): Xe (7), propane
 (10), isobutane (11, diagnostic only), H2O (14), O2 (15), N2O (18,
 diagnostic), ethene (19), H2 (21), D2 (22), CO (23), methylal (24), DME (25,
 diagnostic), C2F6 (29), SF6 (30), methanol (34), C2H2F4 (43), TMA (44),
 n-propanol (46), para-H2 (47), ortho-D2 (48), C4F7N (49), SiH4 (60), CCl4
-(61), plus the ≈30 gases of MB-20 and every B⊥E calculation (MB-05, MB-23).
+(61), ethane (9), plus the ≈30 gases of MB-20, every B⊥E calculation (MB-05,
+MB-23, MB-28) and every high-field calculation with a magnetic field not
+parallel to E (MB-24).
 
 ## Impact on results
 
@@ -118,6 +126,19 @@ NaN-initialised memory (MB-19/20).
    output arrays pre-filled with NaN / −1234567 vs. 0, comparing exactly
    the elements MIXER reads (MB-17 … MB-21). See
    `NimBoltz/tests/ub/undef.nim`.
+6. **Never-written locals** (static, from the translator's symbol tables,
+   `f2nim magboltz.f --undef`): a local variable that is read but never
+   assigned, read, used as a DO variable or passed to an output argument
+   anywhere in its routine. In upstream this lists 33 names: all the
+   typo-type defects above (ESPRES, QMOM, O, QEXCTOT, QCOUNT, SUMATT,
+   SUMINEL, XATT5/YATT5, DCYS) plus MB-25/26/27. What remains in `fixes`
+   is harmless (dummy arguments VIRIAL1–6 and RDUM, the skipped
+   XATT5/YATT5). gfortran's `-Wuninitialized` found none of these.
+7. **Sibling diff** (`sibdiff.py`): near-duplicate routines (MONTEFT /
+   MONTEFTA / MONTEFTG / MONTEFTH and the thermal variants, MIXER/MIXERT,
+   ELIMIT*, GAS21/GAS47, …) aligned statement by statement; a token
+   substitution that occurs only once between two routines is reported.
+   Found MB-24, MB-28, MB-29.
 
 **AddressSanitizer / UBSan / valgrind.** Run afterwards for comparison:
 upstream built with `-fsanitize=address,undefined` on all decks of
@@ -125,7 +146,7 @@ upstream built with `-fsanitize=address,undefined` on all decks of
 MB-01 and MB-07: the negative index lands inside another large, valid
 array, which ASan cannot distinguish from a legal access. ASan does not
 check initialisation, so it finds none of the undefined-variable defects.
-UBSan reports nothing beyond that. Valgrind could not be used: its loader
+UBSan's object-size check reports only the propane read (MB-08) again. Valgrind could not be used: its loader
 fails to map the 1.7 GB static data segment of Magboltz. `-fcheck=bounds`
 knows the declared bounds of every array, including COMMON blocks and dummy
 arguments, so it is the stronger tool for Fortran. `-finit-*` with FP traps
@@ -321,6 +342,68 @@ transverse diffusion parallel to B is therefore `NaN%` in every B⊥E run
 with anisotropic scattering. MONTE and MONTEA guard the same expression with
 `IF(ST2.NE.0.0D0) … ELSE DFXXST(J1)=0`. Fix: the same guard. DIFXX itself
 is unchanged.
+
+### MB-24 MONTEFTG / MONTEFTH: secondary-electron direction
+
+The direction of the secondary electron after an ionisation is computed by
+the same three statements in all MONTEFT* routines (lines 14528–14530 in
+MONTEFT). MONTEFTG (line 16255) uses `DCYS` instead of `DCY2` in
+DCY(NCLTMP); MONTEFTH uses `DCYS` in DCX(NCLTMP) (16998) and
+`DCZ2*F6S*ARGZ*F5S*F8S` instead of `DCZ2*F6S+ARGZ*F5S*F8S` in DCZ(NCLTMP)
+(16996). DCYS is an implicit, never-set scalar there, so the secondaries
+start in a direction that is not even a unit vector and depends on stack
+contents. These routines are used by the non-thermal high-field
+calculation (ALPCLCB/ALPCLCC) for B⊥E and B at a general angle; the
+thermal variants are correct. Found because zero- and NaN-initialised
+builds of the high-field B decks gave different output.
+
+### MB-25 GAS9 / GAS19 (ethane, ethene): NBRM
+
+Lines 34844 and 53503: `DO 780 J=2,NBRM`. The bremsstrahlung table has
+NBREM=25 points (used in the fall-through `J=NBREM`); NBRM is undefined.
+With NBRM=0 the loop never runs and every energy above 1 keV uses the last
+interval: QIN(56) of ethane is a constant 7.1e-24 cm² instead of
+4.6e-22 … 1.3e-22 cm² (1.5–7.5 keV). With a large garbage value the result
+happens to be correct, so the outcome depends on the stack. Fix: NBREM.
+
+### MB-26 GAS23 (CO): N2XC5
+
+Line 61156: `DO 509 J=2,N2XC5` for the A³Π v=4 level (QIN(127)); the
+table XEXC5/YEXC5 has NEXC5=9 points. With N2XC5 undefined (0) the last
+interval (17.5–20 eV) is extrapolated down to the threshold: QIN(127) at
+7.55 eV is 1.32e-18 instead of 4.29e-18 cm², at 12.55 eV 1.15e-18 instead
+of 2.11e-18. Fix: NEXC5.
+
+### MB-27 GAS43 / GAS60: names in unreachable fall-throughs
+
+`J=NVIBR1` (GAS43, lines 81418, 81442) and `J=NNVIBR` (GAS60, 99767,
+99783, 99799) after search loops over XVIBR(NVIBR); the fall-through
+cannot be reached because EN.GT.XVIBR(NVIBR) is excluded before the loop.
+No numerical effect; renamed to NVIBR.
+
+### MB-28 MONTEFTG / MONTEFTGT: Penning test inverted
+
+Lines 16128 and 7739: `IF(PENFRA(1,I).EQ.0.0) THEN` guards the Penning
+transfer block, which then draws R and skips if R.GT.PENFRA(1,I). With
+`.EQ.` the block only runs for levels without Penning transfer and then
+always skips, so for B⊥E at high field there is never a Penning
+transfer, whatever IPEN and PENFRA say. All other MONTE routines use
+`.NE.0.0`. Fix: `.NE.`.
+
+### MB-29 ELIMITBT: clamp stored in the wrong variable
+
+Line 4976: `DCZ2=DMIN1(DZCOM,1.0D0)`; ELIMITT and ELIMITCT have
+`DZCOM=DMIN1(DZCOM,1.0D0)`. DCZ2 is not used afterwards, so DZCOM is not
+clamped. Only matters if rounding makes DZCOM exceed 1. Fix: `DZCOM=`.
+
+## Inconsistencies left unchanged
+
+- When the energy loss exceeds the energy (`E.LT.EI`) just before the
+  scattering angle is computed, MONTEFT, MONTEFD, MONTEFTG and MONTEFTH
+  set `EI=0.0D0`, while MONTEFTA has that statement commented out and
+  sets `EI=E` (line 17666). This looks like a revision applied to one
+  routine only; which one is intended is for the author to say.
+- FORMAT widths differ between sibling routines (`I5`/`I4`, `F9.5`/`F9.4`).
 
 ## Not defects
 
