@@ -266,5 +266,9 @@ elif fx=='MB-36':
                 'C               INSIDE THE KGAS LOOP, SO ONLY THE LAST GAS COUNTED',
                 'C               (FRIEDLANDT). NOW SUMMED OVER ALL GASES AS IN MIXER',
                 '      FCION(IE)=0.0D0','      FCATT(IE)=0.0D0','      DO 699 KGAS=1,NGAS']
+elif fx=='MB-37':
+    edit('MONTEBT','      DIMENSION XST(1000000),YST(1000000),ZST(1000000),STO(1000000)',
+         ['      DIMENSION XST(2000000),YST(2000000),ZST(2000000),STO(2000000)'],
+         ['MB-37: WAS 1000000; SETUP SETS NCOLM UP TO 2000000 (ALL OTHER','MONTE* USE 2000000)'])
 else: sys.exit('unknown fix')
 open(F,'w').write('\n'.join(L))

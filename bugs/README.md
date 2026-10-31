@@ -2,7 +2,7 @@
 
 Source: `magboltz-11.21.f` (S. Biagi; the program prints `VERSION 11.20`),
 branch `master` of this repository. Line numbers below refer to that file.
-Branch `fixes` has one commit per defect (`MB-01` … `MB-36`); every change,
+Branch `fixes` has one commit per defect (`MB-01` … `MB-37`); every change,
 except the 281 loop starts of MB-10, carries a `C NIMBOLTZ FIX MB-nn:` comment.
 
 The defects were found while porting Magboltz to Nim with the requirement
@@ -56,6 +56,7 @@ a guess, this is said explicitly ("Interpretation").
 | MB-34 | MIXER, MIXERT | gas 1 (0 K), all gases (thermal) | factor `1.D-16` for `1.D-6` | IPEN=1, high field | Penning delocalisation length 10⁻¹⁰ of its value |
 | MB-35 | MIXER | gas 6 with several attachments | `NATT5`/`QATT5` for 6 | always | none (QATT sums are never read) |
 | MB-36 | MIXERT | any, thermal | sums reset inside the gas loop | always | FRIEDLAND ionisation/attachment of the last gas only |
+| MB-37 | MONTEBT | any, thermal, B⊥E | arrays of 1000000 for NCOLM=2000000 | long decorrelation length | stored positions overwritten: diffusion garbage (DIFXX 10²¹ cm²/s) |
 
 Affected gases (cross sections or angular distributions): Xe (7), propane
 (10), isobutane (11, diagnostic only), H2O (14), O2 (15), N2O (18,
@@ -65,7 +66,8 @@ n-propanol (46), para-H2 (47), ortho-D2 (48), C4F7N (49), SiH4 (60), CCl4
 (61), ethane (9), plus the ≈30 gases of MB-20, every B⊥E calculation (MB-05,
 MB-23, MB-28) and every high-field calculation with a magnetic field not
 parallel to E (MB-24), every 0 K mixture of two or more
-gases (MB-31) and every thermal calculation at high field (MB-34, MB-36).
+gases (MB-31) every thermal calculation at high field (MB-34, MB-36) and every thermal
+B⊥E calculation with the long decorrelation length (MB-37).
 
 ## Impact on results
 
@@ -498,6 +500,21 @@ thermal, 30 kV/cm: "AVERAGE IONISATION" 0.378E-03 (CO2 only) instead of
 0.229E-02 ×10¹²/s. Fix: zero once per energy before the gas loop, scale
 once after it.
 
+### MB-37 MONTEBT: decorrelation arrays too short
+
+Line 3801: `DIMENSION XST(1000000),YST(1000000),ZST(1000000),STO(1000000)`.
+SETUP sets NCOLM, the length of this ring of stored positions, to 2000000
+unless the field is high or the mixture has more than 3% molecular gas;
+all other MONTE routines dimension the arrays 2000000. From the
+1000001st collision on MONTEBT writes past XST, YST and ZST into the
+neighbouring arrays, so the positions that the diffusion sums subtract
+are wrong. With bounds checking: "Index '1000001' of dimension 1 of array
+'xst' above upper bound of 1000000" at line 3967. Example (deck
+`ar_bperp_thermal`: pure Ar, thermal, 1 kV/cm, 1 T at 90°, NSCALE/10):
+DIFXX 0.2263D+22 instead of 0.1627D+04 cm²/s, DIFYY 0.3587D+05 instead of
+0.1223D+04, DIFZZ 0.2231D+05 instead of 0.2076D+03; drift velocity and mean
+energy are unchanged. Fix: dimension 2000000.
+
 ## Inconsistencies left unchanged
 
 - When the energy loss exceeds the energy (`E.LT.EI`) just before the
@@ -515,6 +532,13 @@ once after it.
 
 ## Not defects
 
+- With NSCALE reduced (reproduce.sh divides it by 10), a run with the long
+  decorrelation length NCOLM=2000000 has no decorrelated pairs yet in
+  segments 3–5. MONTEB/MONTEBT then divide 0/0 in those segments'
+  diffusion estimates and print `NaN%` errors (e.g. the fixed run of
+  MB-37), and MONTEC/MONTECT, which lack the `ID.NE.0` test, subtract
+  positions not yet stored. With NSCALE=4·10⁷ every segment has at least
+  4·10⁶ collisions, so this cannot happen.
 - `NaN%` errors and log(0) in the SST analysis when all electrons attach
   (e.g. pure C4F7N at 1 kV/cm), or zero diffusion in very short runs: these
   are numerical consequences of the input, not of the code.

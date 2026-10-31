@@ -38,3 +38,4 @@ MB-26    T      xsec  23 2 40.0 'QIN' 127 8         CO A3PI v=4 from the wrong i
 MB-31    P      deck  ar_h2o                        Ar/H2O 90/10: H2O second, rotations isotropic
 MB-31    P      deck  h2o_ar                        same mixture, H2O first: drift velocity x2.3
 MB-33    B      deck  arco2cf4_thermal              ICOLL(3,0) written (MIXERT IARRY=0, MONTET)
+MB-37    B      deck  ar_bperp_thermal              XST(1000001) written (MONTEBT, NCOLM=2000000)
