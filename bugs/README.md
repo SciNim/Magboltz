@@ -2,7 +2,7 @@
 
 Source: `magboltz-11.21.f` (S. Biagi; the program prints `VERSION 11.20`),
 branch `master` of this repository. Line numbers below refer to that file.
-Branch `fixes` has one commit per defect (`MB-01` … `MB-39`); every change,
+Branch `fixes` has one commit per defect (`MB-01` … `MB-40`); every change,
 except the 281 loop starts of MB-10, carries a `C NIMBOLTZ FIX MB-nn:` comment.
 
 The defects were found while porting Magboltz to Nim with the requirement
@@ -59,6 +59,7 @@ a guess, this is said explicitly ("Interpretation").
 | MB-37 | MONTEBT | any, thermal, B⊥E | arrays of 1000000 for NCOLM=2000000 | long decorrelation length | stored positions overwritten: diffusion garbage (DIFXX 10²¹ cm²/s) |
 | MB-38 | MONTE*T, MONTEF*T (9 thermal routines) | HFO-1234ze, C4F7N, CF3Br | lab-frame energy for a rest-frame loss | moderation collision, thermal | residual energy EOK−E+0.025 eV instead of 0.025 eV; 1E-20 eV in MONTEF*T |
 | MB-39 | MONTEFT*, MONTEFD, MONTEF*T (10 routines) | all | wrong variable in the azimuth wrap | every ionisation in SST/PT/TOF runs | the secondary electron takes the azimuth of the scattered primary in half of the ionisations instead of the opposite one; no effect resolved |
+| MB-40 | TOFG | all | division by zero | B ⊥ E SST/TOF run without ionisation | PT attachment rate and TOF (α−η) printed as NaN |
 
 Affected gases (cross sections or angular distributions): Xe (7), propane
 (10), isobutane (11, diagnostic only), H2O (14), O2 (15), N2O (18,
@@ -70,7 +71,8 @@ MB-23, MB-28) and every high-field calculation with a magnetic field not
 parallel to E (MB-24), every 0 K mixture of two or more
 gases (MB-31) every thermal calculation at high field (MB-34, MB-36) and every thermal
 B⊥E calculation with the long decorrelation length (MB-37), and
-thermal calculations with HFO-1234ze, C4F7N or CF3Br (MB-38).
+thermal calculations with HFO-1234ze, C4F7N or CF3Br (MB-38), and
+the printed attachment rate of B⊥E SST/TOF runs without ionisation (MB-40).
 
 ## Impact on results
 
@@ -568,6 +570,21 @@ the largest relative change is the TOF transverse diffusion,
 decks (Ar/CO2 with B at 0°, 45° and 90°, SF6, a three-gas chain) change
 by the scatter of the fast runs; a deck without ionisation is identical.
 
+### MB-40 TOFG: NaN attachment rate without ionisation
+
+TOFG (B ⊥ E, line 8063) replaces the attachment/ionisation ratio that
+MONTEFTG counted in the avalanche by the ratio of the collision
+frequencies, `ATTOINT=FRATT/FRION`. Without ionisation FRION = 0, so
+ATTOINT is infinite, and the branch below for this case
+(`IF(ATTOINT.EQ.-1.0D0)`, MONTEFTG's mark for "no ionisation") is never
+taken: the attachment rate becomes ∞/(1−∞) = NaN. TOF and TOFH keep
+MONTEFT's ratio and are not affected. Fix: `IF(FRION.GT.0.0D0)
+ATTOINT=FRATT/FRION`.
+
+Pure SF6 at 5 kV/cm, B = 1 T ⊥ E (`decks/sf6_bperp.in`): upstream prints
+`ATT= NaN` (PT rates) and `ALPHA-ATT /CM.= NaN`; fixed, ATT = 4.86 and
+(α−η) = −5.4·10⁵ /cm.
+
 ## Inconsistencies left unchanged
 
 - When the energy loss exceeds the energy (`E.LT.EI`) just before the
@@ -589,6 +606,9 @@ by the scatter of the fast runs; a deck without ionisation is identical.
 - A Penning electron starts in the direction the exciting electron had at
   the start of its flight, not the direction after the collision.
 - FORMAT widths differ between sibling routines (`I5`/`I4`, `F9.5`/`F9.4`).
+- The relative errors of the TOF results are half the difference between
+  two planes, except in TOFG for a growing avalanche (the full
+  difference).
 - For the cut angular distribution (INDEX=1) MONTE draws R31 before R3,
   the other 17 MONTE routines and the ELIMITs draw R3 first. Both are
   uniform random numbers, so only the random stream differs.

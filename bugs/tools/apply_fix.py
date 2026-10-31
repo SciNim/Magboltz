@@ -283,5 +283,9 @@ elif fx=='MB-39':
             edit(r,ind+'IF(PHIS.GT.F4) PHIS=PHI0-F4',[ind+'IF(PHIS.GT.F4) PHIS=PHIS-F4'],
                  ['MB-39: WAS PHI0-F4, WHICH GIVES THE SECONDARY THE AZIMUTH OF',
                   'THE PRIMARY (PHIS-F4 IS PHI0-API, THE OPPOSITE AZIMUTH)'])
+elif fx=='MB-40':
+    edit('TOFG','      ATTOINT=FRATT/FRION',['      IF(FRION.GT.0.0D0) ATTOINT=FRATT/FRION'],
+         ['MB-40: WITHOUT IONISATION FRATT/FRION IS INFINITE (NAN IN THE',
+          'RESULTS); KEEP ATTOINT=-1 FROM MONTEFTG, HANDLED BELOW'])
 else: sys.exit('unknown fix')
 open(F,'w').write('\n'.join(L))
