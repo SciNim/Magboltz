@@ -5019,7 +5019,8 @@ C
       CSQD=F3*F3                                                        
       IF(F3.LT.0.0D0.AND.CSQD.GT.U) F6=-1.0D0*F6                        
       F5=DSIN(THETA) 
-      DCZ2=DMIN1(DZCOM,1.0D0)
+C NIMBOLTZ FIX MB-29: WAS DCZ2= (UNUSED), AS IN ELIMITT/ELIMITCT: DZCOM=
+      DZCOM=DMIN1(DZCOM,1.0D0)
       ARGZ=DSQRT(DXCOM*DXCOM+DYCOM*DYCOM) 
       IF(ARGZ.EQ.0.0D0) THEN
        DCZ1=F6
