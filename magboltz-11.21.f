@@ -81527,7 +81527,8 @@ C VIBRATIONAL RESONANCE
       DO 360 J=2,NVIBR                                                 
       IF(EN.LE.XVIBR(J)) GO TO 361                                     
   360 CONTINUE                                                          
-      J=NVIBR1                                                          
+C NIMBOLTZ FIX MB-27: WAS NVIBR1 (UNDEFINED, UNREACHABLE)
+      J=NVIBR
   361 Y1=DLOG(YVIBR(J-1))
       Y2=DLOG(YVIBR(J))
       X1=DLOG(XVIBR(J-1))
@@ -81551,7 +81552,8 @@ C VIBRATIONAL RESONANCE
       DO 370 J=2,NVIBR                                                 
       IF(EN.LE.XVIBR(J)) GO TO 371                                     
   370 CONTINUE                                                          
-      J=NVIBR1                                                          
+C NIMBOLTZ FIX MB-27: WAS NVIBR1 (UNDEFINED, UNREACHABLE)
+      J=NVIBR
   371 Y1=DLOG(YVIBR(J-1))
       Y2=DLOG(YVIBR(J))
       X1=DLOG(XVIBR(J-1))
@@ -99905,7 +99907,8 @@ C V13 + V24
       DO 341 J=2,NVIBR
       IF(EN.LE.XVIBR(J)) GO TO 342
   341 CONTINUE
-      J=NNVIBR
+C NIMBOLTZ FIX MB-27: WAS NNVIBR (UNDEFINED, UNREACHABLE)
+      J=NVIBR
   342 A=(YVIBR(J)-YVIBR(J-1))/(XVIBR(J)-XVIBR(J-1))                     
       B=(XVIBR(J-1)*YVIBR(J)-XVIBR(J)*YVIBR(J-1))/(XVIBR(J-1)-XVIBR(J))
       QRES=(A*EN+B) 
@@ -99921,7 +99924,8 @@ C  2V13
       DO 346 J=2,NVIBR
       IF(EN.LE.XVIBR(J)) GO TO 347
   346 CONTINUE
-      J=NNVIBR
+C NIMBOLTZ FIX MB-27: WAS NNVIBR (UNDEFINED, UNREACHABLE)
+      J=NVIBR
   347 A=(YVIBR(J)-YVIBR(J-1))/(XVIBR(J)-XVIBR(J-1))                     
       B=(XVIBR(J-1)*YVIBR(J)-XVIBR(J)*YVIBR(J-1))/(XVIBR(J-1)-XVIBR(J))
       QRES=(A*EN+B)   
@@ -99937,7 +99941,8 @@ C  SUM OF HIGHER VIBRATIONS
       DO 351 J=2,NVIBR
       IF(EN.LE.XVIBR(J)) GO TO 352
   351 CONTINUE
-      J=NNVIBR
+C NIMBOLTZ FIX MB-27: WAS NNVIBR (UNDEFINED, UNREACHABLE)
+      J=NVIBR
   352 A=(YVIBR(J)-YVIBR(J-1))/(XVIBR(J)-XVIBR(J-1))                     
       B=(XVIBR(J-1)*YVIBR(J)-XVIBR(J)*YVIBR(J-1))/(XVIBR(J-1)-XVIBR(J))
       QRES=(A*EN+B)   
