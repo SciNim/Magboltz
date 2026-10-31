@@ -929,9 +929,12 @@ C     L=4      INELASTIC NTH GAS
 C     L=5      SUPERELASTIC NTH GAS                                   
 C---------------------------------------------------------------   
       DO 700 IE=1,N4000 
-      DO 700 KGAS=1,NGAS 
+C NIMBOLTZ FIX MB-36: FCION/FCATT WERE ZEROED AND SCALED BY EROOT
+C               INSIDE THE KGAS LOOP, SO ONLY THE LAST GAS COUNTED
+C               (FRIEDLANDT). NOW SUMMED OVER ALL GASES AS IN MIXER
       FCION(IE)=0.0D0
       FCATT(IE)=0.0D0
+      DO 699 KGAS=1,NGAS
 C ELASTIC
       NP=1
       IF(KGAS.EQ.1) THEN                                              
@@ -2058,10 +2061,11 @@ C ---------------------------------------------------------------------
       DO 630 IF=2,IPLAST(KGAS)                                          
       CF(KGAS,IE,IF)=CF(KGAS,IE,IF)+CF(KGAS,IE,IF-1)                    
  630  CONTINUE                   
+      TCF(KGAS,IE)=TCF(KGAS,IE)*EROOT(IE)
+ 699  CONTINUE
       FCATT(IE)=FCATT(IE)*EROOT(IE)
-      FCION(IE)=FCION(IE)*EROOT(IE)                                     
-      TCF(KGAS,IE)=TCF(KGAS,IE)*EROOT(IE)   
- 700  CONTINUE 
+      FCION(IE)=FCION(IE)*EROOT(IE)
+ 700  CONTINUE
 C     WRITE(6,841) (INDEX(KGAS,J),J,KGAS, J=1,IPLAST(KGAS))
 C 841 FORMAT(2X,' INDEX=',I3,' J=',I3,' KGAS=',I2)                                  
 C  SET ANISOTROPIC FLAG IF ANISOTROPIC SCATTERING DATA IS DETECTED
