@@ -2,7 +2,7 @@
 
 Source: `magboltz-11.21.f` (S. Biagi; the program prints `VERSION 11.20`),
 branch `master` of this repository. Line numbers below refer to that file.
-Branch `fixes` has one commit per defect (`MB-01` … `MB-38`); every change,
+Branch `fixes` has one commit per defect (`MB-01` … `MB-39`); every change,
 except the 281 loop starts of MB-10, carries a `C NIMBOLTZ FIX MB-nn:` comment.
 
 The defects were found while porting Magboltz to Nim with the requirement
@@ -58,6 +58,7 @@ a guess, this is said explicitly ("Interpretation").
 | MB-36 | MIXERT | any, thermal | sums reset inside the gas loop | always | FRIEDLAND ionisation/attachment of the last gas only |
 | MB-37 | MONTEBT | any, thermal, B⊥E | arrays of 1000000 for NCOLM=2000000 | long decorrelation length | stored positions overwritten: diffusion garbage (DIFXX 10²¹ cm²/s) |
 | MB-38 | MONTE*T, MONTEF*T (9 thermal routines) | HFO-1234ze, C4F7N, CF3Br | lab-frame energy for a rest-frame loss | moderation collision, thermal | residual energy EOK−E+0.025 eV instead of 0.025 eV; 1E-20 eV in MONTEF*T |
+| MB-39 | MONTEFT*, MONTEFD, MONTEF*T (10 routines) | all | wrong variable in the azimuth wrap | every ionisation in SST/PT/TOF runs | the secondary electron takes the azimuth of the scattered primary in half of the ionisations instead of the opposite one; no effect resolved |
 
 Affected gases (cross sections or angular distributions): Xe (7), propane
 (10), isobutane (11, diagnostic only), H2O (14), O2 (15), N2O (18,
@@ -542,13 +543,51 @@ reached); pure CF3Br, drift 0.5613 → 0.5628 µm/ns (±20%) at 100 V/cm and
 attachment 4673 → 4671 /cm (±0.18%), TOF drift 87.87 → 88.06 µm/ns
 (±0.2–0.3%).
 
+### MB-39 MONTEF* routines: azimuth of the ionisation secondary
+
+At an ionisation the ten avalanche routines give the secondary electron
+"free kinematics" angles: the polar angle from transverse momentum balance
+and the azimuth opposite to that of the scattered primary, PHIS = PHI0 + π,
+wrapped into [0, 2π]:
+
+    PHIS=PHI0+API
+    IF(PHIS.GT.F4) PHIS=PHI0-F4
+
+(F4 = 2π; MONTEFTT 5776/5798, MONTEFDT 6637/6659, MONTEFTGT 7840/7862,
+MONTEFTHT 8785/8807, MONTEFTAT 9752/9774, MONTEFT 14503/14525, MONTEFD
+15175/15197, MONTEFTG 16229/16251, MONTEFTH 16971/16993, MONTEFTA
+17695/17717.) The wrap subtracts 2π from PHI0 instead of PHIS, so for
+PHI0 > π the secondary gets the azimuth of the primary itself. Fix:
+`PHIS=PHIS-F4`.
+
+No effect is resolved at the statistics tried. Ar/CO2 90/10 at 30 kV/cm,
+0 K (NSCALE/10, 16 seeds each, with NimBoltz, which reproduces both
+versions bit for bit): all SST, PT and TOF results agree within 2.2σ;
+the largest relative change is the TOF transverse diffusion,
+2009 ± 36 → 2075 ± 26 cm²/s (+3.3%, 1.5σ). Single Fortran runs of six
+decks (Ar/CO2 with B at 0°, 45° and 90°, SF6, a three-gas chain) change
+by the scatter of the fast runs; a deck without ionisation is identical.
+
 ## Inconsistencies left unchanged
 
 - When the energy loss exceeds the energy (`E.LT.EI`) just before the
   scattering angle is computed, MONTEFT, MONTEFD, MONTEFTG and MONTEFTH
   set `EI=0.0D0`, while MONTEFTA has that statement commented out and
   sets `EI=E` (line 17666). This looks like a revision applied to one
-  routine only; which one is intended is for the author to say.
+  routine only; which one is intended is for the author to say. The
+  thermal versions differ again: MONTEFTT sets `EI=EOK-0.0001D0`,
+  MONTEFDT `EI=0.0D0`, MONTEFTAT, MONTEFTGT and MONTEFTHT have no such
+  test (ARG1 is floored at SMALL instead).
+- In the thermal avalanche routines the ionisation secondary gets its
+  energy and direction in the rest frame of the molecule hit and is put on
+  the stack without the transformation back to the lab frame that the
+  primary gets. The error is of order v_gas/v_electron (about 1e-3).
+- MONTEFDT alone renormalises the direction at the end of the flight
+  through its z component, `DCZ2=±SQRT(1-DCX2**2-DCY2**2)`, before
+  computing the velocity relative to the gas; the other routines use the
+  direction as it comes out of the flight formulas. Only rounding differs.
+- A Penning electron starts in the direction the exciting electron had at
+  the start of its flight, not the direction after the collision.
 - FORMAT widths differ between sibling routines (`I5`/`I4`, `F9.5`/`F9.4`).
 - For the cut angular distribution (INDEX=1) MONTE draws R31 before R3,
   the other 17 MONTE routines and the ELIMITs draw R3 first. Both are
