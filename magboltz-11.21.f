@@ -10583,12 +10583,15 @@ C
        ANGCT(IE,NP)=ANGC
        PSCT(IE,NP)=PSCT2
        INDEX(NP)=1
+C NIMBOLTZ FIX MB-31: ENDIF MOVED UP. THE KIN2(J).EQ.2 TEST WAS
+C               INSIDE THE KIN2(J).EQ.1 BLOCK (UNREACHABLE), AS
+C               FOR THE OTHER FIVE GASES
+      ENDIF
       IF(KIN2(J).EQ.2) THEN
        PSCT(IE,NP)=PEQIN2(J,IE)
        INDEX(NP)=2
       ENDIF
 C
-      ENDIF
       IF(IE.GT.1) GO TO 150                                    
       RGAS(NP)=RGAS2                                                    
       EIN(NP)=EI2(J)/RGAS2
