@@ -11504,8 +11504,11 @@ C
       QATT(6,I)=Q6(4,I)*AN6                 
       IF(NATT6.GT.1) THEN
        QATT(6,I)=0.0D0
-       DO 822 KATT=1,NATT5
-  822  QATT(5,I)=QATT(5,I)+QATT5(KATT,I)*AN6
+C NIMBOLTZ FIX MB-35: WAS NATT5 AND QATT(5)/QATT5 BELOW (GAS 6
+C               ATTACHMENT)
+       DO 822 KATT=1,NATT6
+C NIMBOLTZ FIX MB-35: SEE ABOVE
+  822  QATT(6,I)=QATT(6,I)+QATT6(KATT,I)*AN6
       ENDIF                            
 C                                                                       
   850 QREL(I)=0.0D0                                                     
