@@ -1,6 +1,7 @@
 # apply one NimBoltz fix (by id) to magboltz-11.21.f; asserts every edit matches exactly
-import re,sys
-F='/home/agent/src/Magboltz/magboltz-11.21.f'
+#   python3 apply_fix.py MB-nn [magboltz-11.21.f]
+import re,sys,os
+F=sys.argv[2] if len(sys.argv)>2 else os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..','magboltz-11.21.f')
 L=open(F).read().split('\n')
 def body(r):
     s=next(i for i,l in enumerate(L) if re.match(r'^      SUBROUTINE %s *(\(|$)'%r,l))
