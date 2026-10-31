@@ -61237,7 +61237,8 @@ C  A 3PI V=3
 C  A 3PI V=4                                                                     
       IF(EN.LE.EIN(127)) GO TO 515                                    
       IF(EN.GT.XEXC5(NEXC5)) GO TO 5101
-      DO 509 J=2,N2XC5                               
+C NIMBOLTZ FIX MB-26: WAS N2XC5 (UNDEFINED); THE TABLE LENGTH IS NEXC5
+      DO 509 J=2,NEXC5
       IF(EN.LE.XEXC5(J)) GO TO 510                                     
   509 CONTINUE                                                          
       J=NEXC5                                                           
