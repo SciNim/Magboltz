@@ -8,7 +8,7 @@
 #   T   -finit-real=snan -ffpe-trap=invalid     first arithmetic on an undefined real
 #   P   plain                                   (cross-section printouts)
 # For each case of cases.txt one line: the first runtime error, a NaN in the
-# printout, "clean", or for P (printout) cases the printed values. The full outputs are kept in $WORK (default /tmp/mbrepro).
+# printout, "clean" (decks), or the printed values (cross-section cases). The full outputs are kept in $WORK (default /tmp/mbrepro).
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 src=$(realpath "${1:-$here/../magboltz-11.21.f}")
@@ -31,18 +31,18 @@ grep -v '^#' "$here/cases.txt" | while read -r id build kind rest; do
   n=$((n+1)); o=out/$n
   if [ "$kind" = deck ]; then
     deck=$(echo "$rest" | awk '{print $1}')
-    timeout "${TIMEOUT:-3600}" ./mb-$build < "$here/decks/$deck.in" > $o.out 2> $o.err || true
+    ( timeout "${TIMEOUT:-3600}" ./mb-$build < "$here/decks/$deck.in" > $o.out 2> $o.err; true ) 2>/dev/null
     what=$deck
   else
     args=$(echo "$rest" | sed -E "s/^(([^ ]+ +){2}[^ ]+ +'[A-Z]+' +[0-9]+ +[0-9]+).*/\1/")
-    echo "$args" | timeout 600 ./xs-$build > $o.out 2> $o.err || true
+    ( echo "$args" | timeout 600 ./xs-$build > $o.out 2> $o.err; true ) 2>/dev/null
     what="xsec $args"
   fi
   err=$(grep -m1 -E 'Fortran runtime error|Floating-point exception|SIGFPE' $o.err || true)
   loc=$(grep -m1 -oE 'magboltz.f:[0-9]+|mblib.f:[0-9]+|At line [0-9]+ of file [a-z.]+' $o.err || true)
   if [ -n "$err" ]; then res="$err ${loc}"
   elif grep -q -w -E 'NaN|Infinity' $o.out; then res="NaN in printout"
-  elif [ "$build" = P ]; then res=$(awk '/ EV /{printf "%s ", $NF}' $o.out)
+  elif [ "$kind" = xsec ]; then res=$(awk '/ EV /{printf "%s ", $NF}' $o.out)
   else res=clean; fi
   printf '%-6s %-3s %-28s %s\n' "$id" "$build" "$what" "$res"
 done

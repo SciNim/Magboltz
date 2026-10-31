@@ -17,7 +17,7 @@ MB-11    T      xsec  43 2 0.0004 'PEQEL' 2 8       NaN = undefined EPSIL below 
 MB-12    T      deck  xenon                         undefined Q456 used (GAS7)
 MB-13    T      xsec  21 1 4.0 'PEQEL' 2 8          undefined QMOM used (GAS21, NANISO=1)
 MB-14    T      xsec  22 0 4.0 'Q' 2 8              undefined O compared (GAS22, NANISO=0)
-MB-15    T      deck  c4f7n                         undefined XATT5 used (GAS49)
+MB-15    T      xsec  49 2 4.0 'QATT' 5 8           undefined XATT5/YATT5 used (GAS49 3-body attachment)
 MB-16    T      deck  isobutane                     undefined QEXCTOT (GAS11)
 MB-16    T      deck  oxygen                        undefined QRSUM (GAS15)
 MB-16    T      deck  n2o                           undefined XSECDUM (GAS18)
@@ -32,3 +32,6 @@ MB-20    T      deck  neopentane                    undefined PENFRA and Auger d
 MB-21    P      xsec  49 2 8000.0 'QIN' 27 8        bremsstrahlung missing from level 27
 MB-22    P      xsec  30 2 4.0 'PEQIN' 2 8          same; with MB-17 alone it is -5..-30
 MB-23    T      deck  arco2_bperp                   0/0 in DIFXX error (MONTEB, B perp E)
+MB-24    T      deck  hi_b45                        undefined DCYS (MONTEFTH, B at 45 deg, 30 kV/cm)
+MB-25    T      xsec  9 2 8000.0 'QIN' 56 8         ethane bremsstrahlung constant (NBRM undefined)
+MB-26    T      xsec  23 2 40.0 'QIN' 127 8         CO A3PI v=4 from the wrong interval (N2XC5)
