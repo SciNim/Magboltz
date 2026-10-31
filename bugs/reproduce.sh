@@ -6,7 +6,7 @@
 #   B   -fcheck=bounds                          out-of-bounds array reads
 #   BI  -fcheck=bounds -finit-integer=-1234567  undefined integer used as index
 #   T   -finit-real=snan -ffpe-trap=invalid     first arithmetic on an undefined real
-#   P   plain                                   (cross-section printouts)
+#   P   plain                                   (cross-section printouts; decks: drift velocity)
 # For each case of cases.txt one line: the first runtime error, a NaN in the
 # printout, "clean" (decks), or the printed values (cross-section cases). The full outputs are kept in $WORK (default /tmp/mbrepro).
 set -euo pipefail
@@ -21,6 +21,7 @@ awk -v s="$start" -v e="$end" 'NR<s || NR>e' magboltz.f > mblib.f
 F="gfortran -O0 -g -fbacktrace -std=legacy -w"
 T="-finit-real=snan -finit-integer=-1234567 -ffpe-trap=invalid"
 $F -fcheck=bounds magboltz.f -o mb-B &
+$F magboltz.f -o mb-P &
 $F -fcheck=bounds -finit-integer=-1234567 magboltz.f -o mb-BI &
 $F $T magboltz.f -o mb-T &
 $F "$here/tools/xsec.f" mblib.f -o xs-P &
@@ -31,11 +32,11 @@ grep -v '^#' "$here/cases.txt" | while read -r id build kind rest; do
   n=$((n+1)); o=out/$n
   if [ "$kind" = deck ]; then
     deck=$(echo "$rest" | awk '{print $1}')
-    ( timeout "${TIMEOUT:-3600}" ./mb-$build < "$here/decks/$deck.in" > $o.out 2> $o.err; true ) 2>/dev/null
+    ( set +e; timeout "${TIMEOUT:-3600}" ./mb-$build < "$here/decks/$deck.in" > $o.out 2> $o.err; true ) 2>/dev/null
     what=$deck
   else
     args=$(echo "$rest" | sed -E "s/^(([^ ]+ +){2}[^ ]+ +'[A-Z]+' +[0-9]+ +[0-9]+).*/\1/")
-    ( echo "$args" | timeout 600 ./xs-$build > $o.out 2> $o.err; true ) 2>/dev/null
+    ( set +e; echo "$args" | timeout 600 ./xs-$build > $o.out 2> $o.err; true ) 2>/dev/null
     what="xsec $args"
   fi
   err=$(grep -m1 -E 'Fortran runtime error|Floating-point exception|SIGFPE' $o.err || true)
@@ -43,6 +44,7 @@ grep -v '^#' "$here/cases.txt" | while read -r id build kind rest; do
   if [ -n "$err" ]; then res="$err ${loc}"
   elif grep -q -w -E 'NaN|Infinity' $o.out; then res="NaN in printout"
   elif [ "$kind" = xsec ]; then res=$(awk '/ EV /{printf "%s ", $NF}' $o.out)
+  elif [ "$build" = P ]; then res=$(awk '/Z DRIFT VELOCITY/{printf "vz %s +- %s ", $5, $8}' $o.out)
   else res=clean; fi
   printf '%-6s %-3s %-28s %s\n' "$id" "$build" "$what" "$res"
 done

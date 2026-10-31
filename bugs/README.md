@@ -2,7 +2,7 @@
 
 Source: `magboltz-11.21.f` (S. Biagi; the program prints `VERSION 11.20`),
 branch `master` of this repository. Line numbers below refer to that file.
-Branch `fixes` has one commit per defect (`MB-01` … `MB-29`); every change,
+Branch `fixes` has one commit per defect (`MB-01` … `MB-36`); every change,
 except the 281 loop starts of MB-10, carries a `C NIMBOLTZ FIX MB-nn:` comment.
 
 The defects were found while porting Magboltz to Nim with the requirement
@@ -49,6 +49,13 @@ a guess, this is said explicitly ("Interpretation").
 | MB-27 | GAS43, GAS60 | C2H2F4, SiH4 | undefined names in fall-through | never | none |
 | MB-28 | MONTEFTG, MONTEFTGT | any, B⊥E, high field | Penning test `.EQ.` for `.NE.` | IPEN=1 | no Penning transfer at all |
 | MB-29 | ELIMITBT | any, B⊥E, thermal | clamp stored in unused DCZ2 | rounding | none in practice |
+| MB-30 | MIXER | gas 2 with shells | `EFL1` for `EFL2` | always | none (EFL is never read) |
+| MB-31 | MIXER | gas 2 of any 0 K mixture | ENDIF misplaced, KIN=2 test unreachable | always | inelastic scattering of gas 2 isotropic; drift in Ar/H2O ×0.4 |
+| MB-32 | MIXERT | gases 2–6 with shells, thermal | `KEL1(3)` for `KELn(3)` | always | shell ionisation takes gas 1's anisotropy kind |
+| MB-33 | MIXERT | gas 3 with one attachment process, thermal | `IARRY=0.0` for `=L` | gas 3 attaches | ICOLL written out of bounds (crash with bounds check) |
+| MB-34 | MIXER, MIXERT | gas 1 (0 K), all gases (thermal) | factor `1.D-16` for `1.D-6` | IPEN=1, high field | Penning delocalisation length 10⁻¹⁰ of its value |
+| MB-35 | MIXER | gas 6 with several attachments | `NATT5`/`QATT5` for 6 | always | none (QATT sums are never read) |
+| MB-36 | MIXERT | any, thermal | sums reset inside the gas loop | always | FRIEDLAND ionisation/attachment of the last gas only |
 
 Affected gases (cross sections or angular distributions): Xe (7), propane
 (10), isobutane (11, diagnostic only), H2O (14), O2 (15), N2O (18,
@@ -57,7 +64,8 @@ diagnostic), C2F6 (29), SF6 (30), methanol (34), C2H2F4 (43), TMA (44),
 n-propanol (46), para-H2 (47), ortho-D2 (48), C4F7N (49), SiH4 (60), CCl4
 (61), ethane (9), plus the ≈30 gases of MB-20, every B⊥E calculation (MB-05,
 MB-23, MB-28) and every high-field calculation with a magnetic field not
-parallel to E (MB-24).
+parallel to E (MB-24), every 0 K mixture of two or more
+gases (MB-31) and every thermal calculation at high field (MB-34, MB-36).
 
 ## Impact on results
 
@@ -401,6 +409,95 @@ Line 4976: `DCZ2=DMIN1(DZCOM,1.0D0)`; ELIMITT and ELIMITCT have
 `DZCOM=DMIN1(DZCOM,1.0D0)`. DCZ2 is not used afterwards, so DZCOM is not
 clamped. Only matters if rounding makes DZCOM exceed 1. Fix: `DZCOM=`.
 
+MB-30 to MB-36 were found when the six pasted per-gas blocks of MIXER and
+MIXERT were merged into one loop over the gases in the port: blocks that
+differ from their siblings by more than the gas number.
+
+### MB-30 MIXER: fluorescence energy of gas 1 for gas 2
+
+Line 10476: `EFL(NP)=EFL1(KION)` in the shell loop of gas 2; gases 1, 3–6
+and MIXERT use their own `EFLn`. No effect on results: no routine reads
+EFL (nor NG1, EG1, NG2, EG2, WKLM; only NC0 and EC0 of /IONFL1/ are used).
+Fix: `EFL2`.
+
+### MB-31 MIXER: anisotropic inelastic scattering of gas 2 unreachable
+
+Line 10536: the `ENDIF` that closes `IF(KIN2(J).EQ.1) THEN` comes after
+the `IF(KIN2(J).EQ.2) THEN ... ENDIF` block, so the KIN=2 test sits inside
+the KIN=1 block and can never succeed. NANISO=2 is fixed in SETUP and most
+gas routines set KIN(J)=NANISO, so in every calculation at 0 K the inelastic
+levels of the second gas of the mixture are scattered isotropically
+(INDEX=0) instead of with their PEQIN; with the same gases in another
+order the result changes. Gases 1, 3–6 and MIXERT are correct. Fix: move
+the `ENDIF` up.
+
+The effect is large for polar molecules, whose rotational excitation is
+strongly forward-peaked. Ar/H2O and Ar/methanol 90/10, 20 °C, 760 Torr,
+1 kV/cm, B=0 (NMAX reduced 10×, drift velocity in µm/ns):
+
+| mixture | upstream, Ar first | upstream, Ar second | fixed, Ar first |
+|---|---|---|---|
+| Ar/H2O | 4.52 ± 1.2% | 10.56 ± 1.3% | 10.59 ± 1.2% |
+| Ar/methanol | 7.30 ± 1.3% | 26.91 ± 1.0% | 27.23 ± 1.0% |
+
+Upstream depends on the order of the gases in the input; the fixed program
+gives the "polar gas first" result either way. Ar/iso-propanol and
+Ar/n-propanol move from 6.98 to 23.6, Ar/N2O 10% from 56.5 to 58.3.
+
+### MB-32 MIXERT: anisotropy kind of gas 1 for the shells of gases 2–6
+
+Lines 1143, 1184, 1225, 1266, 1306 (and the `.EQ.2` tests below them):
+the shell ionisation loops of gases 2–6 test `KEL1(3)`; their single
+ionisation branches and MIXER use `KELn(3)`. 37 gas routines set
+KEL(J)=NANISO or 2 (anisotropic, PEQION from the shifted elastic PEQEL), 41
+set KEL(J)=0 and GAS41/GAS58 set KEL(3)=1. When gas 1 and a gas with shells
+come from different groups (Ar/CO2 and Ar/CH4 do not, Ar with any of the
+41 does), the shells of that gas are scattered with the wrong angular
+distribution in thermal runs. Fix: `KELn(3)`.
+
+### MB-33 MIXERT: gas 3 attachment has process kind 0
+
+Line 1680: `IARRY(KGAS,NP)=0.0` where the other gases have `IARRY=L`
+(L=3). Only the branch for one attachment process (NATT ≤ 1) of gas 3 has
+it. The thermal MONTE routines count `ICOLL(KGAS,IARRY(KGAS,I))`, so every
+attachment to gas 3 increments `ICOLL(3,0)`, which lies before the array
+in COMMON /OUTPTT/ (in TIME). Reproducer: Ar/CO2/CF4 80/10/10, thermal,
+5 kV/cm (`decks/arco2cf4_thermal.in`; CF4 has one attachment process):
+with `-fcheck=bounds` upstream stops at line 3042 of MONTET, `Index '0' of
+dimension 2 of array 'icoll' below lower bound of 1`. Fix: `IARRY=L`.
+
+### MB-34 MIXER, MIXERT: Penning delocalisation length times 1e-16
+
+Lines 10368 (MIXER, gas 1) and 1852, 1884, 1916, 1948, 1980, 2012
+(MIXERT, all gases): `PENFRA(2,NP)=PENFRA1(2,J)*1.D-16/DSQRT(3.0D0)`.
+MIXER uses `1.D-6` for gases 2–6. PENFRA(2) is the delocalisation length
+in microns (comment in the main program, lines 291–297) and the MONTEFT*
+routines that use it work in metres (CONST9=CONST3*0.01D0 is in m/ps), so
+1.D-6 converts it; 1.D-16 looks copied from the cross-section factors.
+About 30 gas routines set PENFRA(2)=1.0 (µm) for their Penning levels; with
+1.D-16 the Penning electron starts where the excited molecule was formed.
+Affects high-field (TOF/SST) runs with IPEN=1: gas 1 at 0 K, every gas when
+thermal. Fix: `1.D-6`.
+
+### MB-35 MIXER: gas 6 attachment sum
+
+Lines 11440–11441: `DO 822 KATT=1,NATT5` / `QATT(5,I)=QATT(5,I)+QATT5(KATT,
+I)*AN6` in the block for gas 6. No effect on results: QATT, QSUM, QSATT,
+QREL ("cross section data for integrals in OUTPUT") are not read outside
+MIXER and MIXERT. Fix: NATT6, QATT(6,I), QATT6.
+
+### MB-36 MIXERT: ionisation and attachment frequencies of the last gas
+
+Lines 931–934 and 2061–2064: `DO 700 IE` and `DO 700 KGAS` share one
+loop end, and `FCION(IE)=0`, `FCATT(IE)=0` stand inside the KGAS loop, as
+do the scalings by EROOT(IE). After the loop FCION and FCATT hold the
+ionisation and attachment frequencies of the last gas only (MIXER sums
+over the gases). FRIEDLANDT prints their averages ("ESTIMATE USING
+FRIEDLAND") for thermal runs at high field. Example: Ar/CO2 90/10,
+thermal, 30 kV/cm: "AVERAGE IONISATION" 0.378E-03 (CO2 only) instead of
+0.229E-02 ×10¹²/s. Fix: zero once per energy before the gas loop, scale
+once after it.
+
 ## Inconsistencies left unchanged
 
 - When the energy loss exceeds the energy (`E.LT.EI`) just before the
@@ -409,6 +506,12 @@ clamped. Only matters if rounding makes DZCOM exceed 1. Fix: `DZCOM=`.
   sets `EI=E` (line 17666). This looks like a revision applied to one
   routine only; which one is intended is for the author to say.
 - FORMAT widths differ between sibling routines (`I5`/`I4`, `F9.5`/`F9.4`).
+- For the cut angular distribution (INDEX=1) MONTE draws R31 before R3,
+  the other 17 MONTE routines and the ELIMITs draw R3 first. Both are
+  uniform random numbers, so only the random stream differs.
+- Only MONTE and MONTET (B=0) stop with "ENERGY OUT OF RANGE" when more
+  than 1000·J1 collisions fall into the last energy bin; with a magnetic
+  field the run goes on with an energy range that is too small.
 
 ## Not defects
 

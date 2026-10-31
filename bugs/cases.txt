@@ -35,3 +35,6 @@ MB-23    T      deck  arco2_bperp                   0/0 in DIFXX error (MONTEB, 
 MB-24    T      deck  hi_b45                        undefined DCYS (MONTEFTH, B at 45 deg, 30 kV/cm)
 MB-25    T      xsec  9 2 8000.0 'QIN' 56 8         ethane bremsstrahlung constant (NBRM undefined)
 MB-26    T      xsec  23 2 40.0 'QIN' 127 8         CO A3PI v=4 from the wrong interval (N2XC5)
+MB-31    P      deck  ar_h2o                        Ar/H2O 90/10: H2O second, rotations isotropic
+MB-31    P      deck  h2o_ar                        same mixture, H2O first: drift velocity x2.3
+MB-33    B      deck  arco2cf4_thermal              ICOLL(3,0) written (MIXERT IARRY=0, MONTET)

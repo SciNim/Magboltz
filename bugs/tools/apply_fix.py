@@ -211,5 +211,60 @@ elif fx=='MB-28':
 elif fx=='MB-29':
     edit('ELIMITBT','      DCZ2=DMIN1(DZCOM,1.0D0)',['      DZCOM=DMIN1(DZCOM,1.0D0)'],
          ['MB-29: WAS DCZ2= (UNUSED), AS IN ELIMITT/ELIMITCT: DZCOM='])
+elif fx=='MB-30':
+    s,e=body('MIXER')
+    idx=[i for i in range(s,e) if L[i].rstrip()=='      EFL(NP)=EFL1(KION)']
+    assert len(idx)==2 and L[idx[1]-1].rstrip()=='      WKLM(NP)=WK2(KION)',idx
+    L[idx[1]]='      EFL(NP)=EFL2(KION)'
+    L[idx[1]:idx[1]]=['C NIMBOLTZ FIX MB-30: WAS EFL1(KION) (FLUORESCENCE ENERGY OF GAS 1)']
+elif fx=='MB-31':
+    s,e=body('MIXER')
+    idx=[i for i in range(s,e) if L[i].rstrip()=='      IF(KIN2(J).EQ.2) THEN']
+    assert len(idx)==1,idx
+    i=idx[0]
+    assert [x.rstrip() for x in L[i+3:i+6]]==['      ENDIF','C','      ENDIF'],L[i+3:i+6]
+    del L[i+5]
+    L[i:i]=['C NIMBOLTZ FIX MB-31: ENDIF MOVED UP. THE KIN2(J).EQ.2 TEST WAS',
+            'C               INSIDE THE KIN2(J).EQ.1 BLOCK (UNREACHABLE), AS',
+            'C               FOR THE OTHER FIVE GASES',
+            '      ENDIF']
+elif fx=='MB-32':
+    s,e=body('MIXERT')
+    for k in (1,2):
+        idx=[i for i in range(s,e) if L[i].rstrip()=='       IF(KEL1(3).EQ.%d) THEN'%k]
+        assert len(idx)==7,(k,idx)
+        for n,i in zip((2,3,4,5,6),idx[2:]):
+            assert 'PEQION%d(KION'%n in L[i+1],(n,L[i+1])
+            L[i]='       IF(KEL%d(3).EQ.%d) THEN'%(n,k)
+    for i in reversed([i for i in range(s,e) if re.match(r'^       IF\(KEL([2-6])\(3\)\.EQ\.1\) THEN$',L[i]) and 'PEQION' in L[i+1]]):
+        L[i:i]=['C NIMBOLTZ FIX MB-32: WAS KEL1(3) (IONISATION ANISOTROPY OF GAS 1)']
+elif fx=='MB-33':
+    edit('MIXERT','       IARRY(KGAS,NP)=0.0',['       IARRY(KGAS,NP)=L'],
+         ['MB-33: WAS 0.0; MONTE* COUNT ICOLL(KGAS,IARRY) OUT OF BOUNDS'])
+elif fx=='MB-34':
+    edit('MIXER','      PENFRA(2,NP)=PENFRA1(2,J)*1.D-16/DSQRT(3.0D0)',
+         ['      PENFRA(2,NP)=PENFRA1(2,J)*1.D-6/DSQRT(3.0D0)'],
+         ['MB-34: WAS 1.D-16. MICRONS TO METRES AS FOR GASES 2-6'])
+    for n in range(1,7):
+        edit('MIXERT','       PENFRA(KGAS,2,NP)=PENFRA%d(2,J)*1.D-16/DSQRT(3.0D0)'%n,
+             ['       PENFRA(KGAS,2,NP)=PENFRA%d(2,J)*1.D-6/DSQRT(3.0D0)'%n],
+             ['MB-34: WAS 1.D-16. MICRONS TO METRES AS IN MIXER'])
+elif fx=='MB-35':
+    edit('MIXER','       DO 822 KATT=1,NATT5',['       DO 822 KATT=1,NATT6'],
+         ['MB-35: WAS NATT5 AND QATT(5)/QATT5 BELOW (GAS 6 ATTACHMENT)'])
+    edit('MIXER','  822  QATT(5,I)=QATT(5,I)+QATT5(KATT,I)*AN6',
+         ['  822  QATT(6,I)=QATT(6,I)+QATT6(KATT,I)*AN6'],['MB-35: SEE ABOVE'])
+elif fx=='MB-36':
+    s,e=body('MIXERT')
+    i=next(k for k in range(s,e) if L[k].rstrip()=='      DO 700 IE=1,N4000')
+    assert [x.rstrip() for x in L[i+1:i+4]]==['      DO 700 KGAS=1,NGAS','      FCION(IE)=0.0D0','      FCATT(IE)=0.0D0'],L[i:i+4]
+    j=next(k for k in range(i,e) if L[k].rstrip()==' 700  CONTINUE')
+    assert [x.rstrip() for x in L[j-3:j]]==['      FCATT(IE)=FCATT(IE)*EROOT(IE)','      FCION(IE)=FCION(IE)*EROOT(IE)','      TCF(KGAS,IE)=TCF(KGAS,IE)*EROOT(IE)'],L[j-3:j]
+    L[j-3:j+1]=['      TCF(KGAS,IE)=TCF(KGAS,IE)*EROOT(IE)',' 699  CONTINUE',
+                '      FCATT(IE)=FCATT(IE)*EROOT(IE)','      FCION(IE)=FCION(IE)*EROOT(IE)',' 700  CONTINUE']
+    L[i+1:i+4]=['C NIMBOLTZ FIX MB-36: FCION/FCATT WERE ZEROED AND SCALED BY EROOT',
+                'C               INSIDE THE KGAS LOOP, SO ONLY THE LAST GAS COUNTED',
+                'C               (FRIEDLANDT). NOW SUMMED OVER ALL GASES AS IN MIXER',
+                '      FCION(IE)=0.0D0','      FCATT(IE)=0.0D0','      DO 699 KGAS=1,NGAS']
 else: sys.exit('unknown fix')
 open(F,'w').write('\n'.join(L))
