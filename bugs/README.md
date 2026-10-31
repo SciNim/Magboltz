@@ -355,7 +355,12 @@ start in a direction that is not even a unit vector and depends on stack
 contents. These routines are used by the non-thermal high-field
 calculation (ALPCLCB/ALPCLCC) for B⊥E and B at a general angle; the
 thermal variants are correct. Found because zero- and NaN-initialised
-builds of the high-field B decks gave different output.
+builds of the high-field B decks gave different output. Effect in Ar/CO2
+90/10 at 30 kV/cm, B = 5 T (4·10⁷ collisions): the main MC results are
+unchanged (they do not use these routines); the pulsed-Townsend
+attachment coefficient changes by +10% (B⊥E) and −8% (45°), about 1.5σ,
+and α−η from the time-of-flight analysis by less than its error. The
+secondaries forget their initial direction quickly at this field.
 
 ### MB-25 GAS9 / GAS19 (ethane, ethene): NBRM
 
