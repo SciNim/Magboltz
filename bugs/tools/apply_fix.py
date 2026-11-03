@@ -16,7 +16,7 @@ def edit(r,old,new,comment,count=1):
     for i in reversed(idx):
         import textwrap
         txt=' '.join(comment)
-        w=textwrap.wrap(txt,72-15)
+        w=textwrap.wrap(txt,72-16)
         c=['C NIMBOLTZ FIX '+w[0]]+['C               '+x for x in w[1:]]
         c=[x[:72] for x in c]
         for x in c+new: assert len(x)<=72,x
