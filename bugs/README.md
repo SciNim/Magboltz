@@ -726,5 +726,13 @@ sequence: pure SF6 at 50 kV/cm, thermal, SST α = 171.8 / 175.5 /cm
 - `NaN%` errors and log(0) in the SST analysis when all electrons attach
   (e.g. pure C4F7N at 1 kV/cm), or zero diffusion in very short runs: these
   are numerical consequences of the input, not of the code.
+- The ten avalanche routines compute `EAVAUG=EC0(I)/DFLOAT(NAUG)`
+  (MONTEF*T: `EC0(KGAS,I)`) for every ionisation level above 30 eV before
+  the loop over its NAUG Auger electrons (e.g. line 15034 in MONTEFD,
+  6496 in MONTEFDT). For a level without Auger emission (NC0 = EC0 = 0,
+  e.g. SF6) this is 0/0, but the loop is empty and the NaN unused. It shows
+  only as gfortran's `IEEE_INVALID_FLAG` note at the end of the run, or as
+  a stop under `-ffpe-trap=invalid` (pure SF6, thermal, 95 kV/cm, with
+  MB-41..43 fixed), so a trap build cannot be used on such decks.
 - The four non-comment lines longer than 72 columns (93915–93960) carry
   only trailing spaces beyond column 72.
