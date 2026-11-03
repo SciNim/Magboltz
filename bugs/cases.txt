@@ -40,3 +40,4 @@ MB-31    P      deck  h2o_ar                        same mixture, H2O first: dri
 MB-33    B      deck  arco2cf4_thermal              ICOLL(3,0) written (MIXERT IARRY=0, MONTET)
 MB-37    B      deck  ar_bperp_thermal              XST(1000001) written (MONTEBT, NCOLM=2000000)
 MB-40    P      deck  sf6_bperp                     NaN attachment rate from TOFG (B perp E, no ionisation)
+MB-43    T      deck  sf6_thermal                   NaN from DSQRT of -1E-16 at a turning point (MONTEFDT, SF6 50 kV/cm thermal)

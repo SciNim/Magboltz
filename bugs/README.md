@@ -2,7 +2,7 @@
 
 Source: `magboltz-11.21.f` (S. Biagi; the program prints `VERSION 11.20`),
 branch `master` of this repository. Line numbers below refer to that file.
-Branch `fixes` has one commit per defect (`MB-01` … `MB-40`); every change,
+Branch `fixes` has one commit per defect (`MB-01` … `MB-43`); every change,
 except the 281 loop starts of MB-10, carries a `C NIMBOLTZ FIX MB-nn:` comment.
 
 The defects were found while porting Magboltz to Nim with the requirement
@@ -60,6 +60,9 @@ a guess, this is said explicitly ("Interpretation").
 | MB-38 | MONTE*T, MONTEF*T (9 thermal routines) | HFO-1234ze, C4F7N, CF3Br | lab-frame energy for a rest-frame loss | moderation collision, thermal | residual energy EOK−E+0.025 eV instead of 0.025 eV; 1E-20 eV in MONTEF*T |
 | MB-39 | MONTEFT*, MONTEFD, MONTEF*T (10 routines) | all | wrong variable in the azimuth wrap | every ionisation in SST/PT/TOF runs | the secondary electron takes the azimuth of the scattered primary in half of the ionisations instead of the opposite one; no effect resolved |
 | MB-40 | TOFG | all | division by zero | B ⊥ E SST/TOF run without ionisation | PT attachment rate and TOF (α−η) printed as NaN |
+| MB-41 | ALPCALCT | all, thermal | block missing in one of 8 sibling drivers | thermal B = 0 SST/TOF run with α ≈ η | plane spacing not shortened: up to 30× too long; SF6 near its critical field does not finish (> 75 min instead of 130 s) |
+| MB-42 | ALPCLCA/AT/B/BT/C/CT | all | wrong unit / wrong variable / ×100 for /100 | every SST/TOF run with B ≠ 0 | /CTWNER/ errors (read by Garfield++ as percent) absolute 1/cm, stale (ALPCLCB) or 10⁴× too large (ALPCLCBT); not printed by Magboltz |
+| MB-43 | MONTEFDT | all, thermal | √ of a rounding-negative number | thermal B = 0 SST run, electron at a turning point | NaN direction; usually absorbed by a null collision, else the run never ends (Ar/HFO-1234ze, Ar/C4F7N at 1 kV/cm) |
 
 Affected gases (cross sections or angular distributions): Xe (7), propane
 (10), isobutane (11, diagnostic only), H2O (14), O2 (15), N2O (18,
@@ -72,7 +75,9 @@ parallel to E (MB-24), every 0 K mixture of two or more
 gases (MB-31) every thermal calculation at high field (MB-34, MB-36) and every thermal
 B⊥E calculation with the long decorrelation length (MB-37), and
 thermal calculations with HFO-1234ze, C4F7N or CF3Br (MB-38), and
-the printed attachment rate of B⊥E SST/TOF runs without ionisation (MB-40).
+the printed attachment rate of B⊥E SST/TOF runs without ionisation (MB-40),
+thermal B = 0 SST/TOF runs near the critical field (MB-41, MB-43), and the
+Townsend errors left in /CTWNER/ by every SST/TOF run with B ≠ 0 (MB-42).
 
 ## Impact on results
 
@@ -584,6 +589,93 @@ ATTOINT=FRATT/FRION`.
 Pure SF6 at 5 kV/cm, B = 1 T ⊥ E (`decks/sf6_bperp.in`): upstream prints
 `ATT= NaN` (PT rates) and `ALPHA-ATT /CM.= NaN`; fixed, ATT = 4.86 and
 (α−η) = −5.4·10⁵ /cm.
+
+### MB-41 ALPCALCT: no reduced plane spacing when α and η nearly cancel
+
+The drivers of the SST/PT/TOF runs place the sampling planes for a net
+gain of 3 between neighbours, from ALPHAST = 0.85·|α − η| of MONTE. When
+α and η nearly cancel, this spacing is long compared with 1/α and 1/η.
+Version 11.12 added a shorter spacing for that case to ALPCALC and to the
+six ALPCLC* drivers (`IF(ALPHA.GT.(10.0*ALPHAST).OR.ATT.GT.(10.0*ALPHAST))`:
+ALPHAST × 30, 15 or 8 depending on α relative to the density-corrected
+100 and 50 /cm). ALPCALCT (thermal, B = 0; line 5217) kept the 11.11 code;
+all 19 versions 11.1–11.21 in this repository show the block appearing in
+11.12 in seven drivers and never in ALPCALCT. Fix: the same block, with its
+CORR, after line 5217.
+
+Pure SF6, thermal, 760 Torr, 20 °C (fast mode, NSCALE = 4·10⁶): at 95 and
+100 kV/cm MONTE gives α = 1097 / 1205 /cm and η = 1240 / 1131 /cm, and the
+block would set the spacing to 3.0 and 5.8 µm; ALPCALCT uses 30 times
+that, 90 and 174 µm. Upstream the SST avalanches had not finished after
+4500 s (the program stays in MONTEFDT); with the fix the whole run takes
+130 s (95 kV/cm: SST α = 916 ± 7 %, η = 704 ± 7 % /cm; VD = 177.4 µm/ns).
+At 110 kV/cm (α = 1476, η = 938 /cm) the condition is false and the
+output is identical.
+
+### MB-42 ALPCLC*: /CTWNER/ errors in the wrong unit
+
+After an SST/TOF run every driver replaces α and η in /CTOWNS/ and their
+errors in /CTWNER/. The errors are percentages everywhere else: MONTE*
+store `100·√N/N` (e.g. line 12249), ALPCALC and ALPCALCT store the SST
+errors, which are printed as `+- … %` (lines 14015, 5250), and Garfield++
+(`MediumMagboltz::RunMagboltz`, current master) prints `ctwner_.alper` and
+`ctwner_.atter` as `+/- %5.2f%%`. The six TOF drivers store an absolute
+error instead, `ALPER=RALPER*ALPHA/100.` and `ATTER=RATOFER*ATT/100.`
+(RALPER and RATOFER are in percent): ALPCLCA 17227/17229, ALPCLCAT
+9253/9255, ALPCLCC 16470/16471, ALPCLCCT 8259/8261. Two of them go further
+wrong:
+
+- ALPCLCB (lines 15760/15761) assigns the two errors to `ALP1ER` and
+  `ATT1ET`, locals that are never read, so /CTWNER/ keeps the errors MONTEB
+  computed for its own α and η, which the TOF values have replaced;
+- ALPCLCBT (line 7342) has `ATTER=RATOFER*ATT*100.`, 10⁴ times its
+  siblings.
+
+Fix: `ALPER=RALPER`, `ATTER=RATOFER` in all six. Interpretation: the
+percent unit is taken from the majority of the stores and from the main
+caller; if the absolute error was intended for the TOF drivers, MONTE*,
+ALPCALC, ALPCALCT and Garfield++ are wrong instead.
+
+Magboltz itself never prints /CTWNER/ (OUTPUT2 does not read it), so the
+effect is limited to programs that call Magboltz and read /CTWNER/ after
+it returns. With the same runs as the printed values (`/CTWNER/` printed
+by a probe WRITE after each driver), Ar/CO2 90/10 at 30 kV/cm, B = 1 T ⊥ E:
+
+| | α (1/cm) | ALPER upstream | ALPER fixed | η (1/cm) | ATTER upstream | ATTER fixed |
+|---|---|---|---|---|---|---|
+| ALPCLCB (0 K) | 208.49 | 2.362 (MONTEB) | 2.71 | 2.019 | 24.25 (MONTEB) | 6.20 |
+| ALPCLCBT (thermal) | 208.36 | 2.287 | 1.10 | 2.076 | 1306.1 | 6.29 |
+
+The fixed values equal the errors printed with the PT/TOF rates. All
+printed output is unchanged.
+
+### MB-43 MONTEFDT: NaN direction at a turning point
+
+MONTEFDT (thermal SST) recomputes the z direction cosine from the other
+two before the velocity of the electron relative to the gas molecule,
+`DCZ2=AIS*DSQRT(1.0D0-DCX2*DCX2-DCY2*DCY2)` (line 6361; none of the other
+nine avalanche routines does this). Near a turning point of the flight
+along z (DCZ2 ≈ 0) rounding makes the argument −1·10⁻¹⁶ … −4·10⁻¹⁶ and
+DCZ2 becomes NaN. The energy bin of the collision is then 1. If the
+collision is null (most likely), the next flight starts again from the
+previous, finite direction and the run recovers, having used one wrong
+null-collision test. If the collision is real, the NaN propagates into
+the scattered direction, energy and position; no plane is ever crossed,
+and since the limit ITER > NMAX is only tested when a new primary starts
+(the test in the flight loop, line 6264, is commented out), MONTEFDT
+never returns. Fix: `DSQRT(DMAX1(0.0D0,...))`.
+
+Found as a hang of the regression deck `hi_arco2_nob_t1` (Ar/CO2 90/10,
+30 kV/cm, thermal) after MB-39 changed the random sequence; a probe WRITE
+shows the negative argument upstream in that deck (2 times, recovered),
+in pure SF6 at 50 kV/cm (4 times, recovered) and at 95 and 110 kV/cm.
+Unmodified 11.21 never finishes two thermal mixtures at 1 kV/cm,
+Ar/HFO-1234ze and Ar/C4F7N 90/10 (regression decks gas45 and gas49, cut
+at one hour in every run since the port began; NSCALE reduced to 4·10⁶):
+with only this fix they finish in 380 s and 280 s, after 7 and 2 negative
+arguments. Where upstream recovers, the fix only changes the random
+sequence: pure SF6 at 50 kV/cm, thermal, SST α = 171.8 / 175.5 /cm
+(± 2.2 %), η = 1576 / 1595 /cm (± 2.0 %), upstream / fixed.
 
 ## Inconsistencies left unchanged
 
