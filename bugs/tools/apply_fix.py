@@ -319,5 +319,10 @@ elif fx=='MB-42':
           '/CTWNER/ KEPT THE ERRORS OF MONTEB; /CTWNER/ HOLDS PERCENT'])
     edit('ALPCLCB','      ATT1ET=RATOFER*ATT/100.',['      ATTER=RATOFER'],
          ['MB-42: WAS ATT1ET=RATOFER*ATT/100., A LOCAL (SEE ABOVE)'])
+elif fx=='MB-43':
+    edit('MONTEFDT','      DCZ2=AIS*DSQRT(1.0D0-DCX2*DCX2-DCY2*DCY2)',
+         ['      DCZ2=AIS*DSQRT(DMAX1(0.0D0,1.0D0-DCX2*DCX2-DCY2*DCY2))'],
+         ['MB-43: NEAR A TURNING POINT ROUNDING CAN MAKE THE ARGUMENT',
+          '-1E-16; DCZ2 WAS NAN AND THE AVALANCHE COULD NOT END'])
 else: sys.exit('unknown fix')
 open(F,'w').write('\n'.join(L))
