@@ -287,5 +287,20 @@ elif fx=='MB-40':
     edit('TOFG','      ATTOINT=FRATT/FRION',['      IF(FRION.GT.0.0D0) ATTOINT=FRATT/FRION'],
          ['MB-40: WITHOUT IONISATION FRATT/FRION IS INFINITE (NAN IN THE',
           'RESULTS); KEEP ATTOINT=-1 FROM MONTEFTG, HANDLED BELOW'])
+elif fx=='MB-41':
+    edit('ALPCALCT','      ALPHAST=0.85D0*DABS(ALPHA-ATT)',
+         ['      ALPHAST=0.85D0*DABS(ALPHA-ATT)',
+          '      CORR=760.0*(TEMPC+273.15)/(TORR*293.15)',
+          '      IF(ALPHA.GT.(10.0*ALPHAST).OR.ATT.GT.(10.0*ALPHAST)) THEN',
+          '       IF(ALPHA.GT.100.0*CORR) THEN',
+          '        ALPHAST=ALPHAST*30.0',
+          '       ELSE IF(ALPHA.GT.50.0*CORR) THEN',
+          '        ALPHAST=ALPHAST*15.0',
+          '       ELSE',
+          '        ALPHAST=ALPHAST*8.0',
+          '       ENDIF',
+          '      ENDIF'],
+         ['MB-41: THE REDUCED PLANE SPACING FOR ALPHA CLOSE TO ATT, ADDED',
+          'IN 11.12 TO ALPCALC AND THE SIX ALPCLC* ROUTINES, WAS MISSING HERE'])
 else: sys.exit('unknown fix')
 open(F,'w').write('\n'.join(L))
