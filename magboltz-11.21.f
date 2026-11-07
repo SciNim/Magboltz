@@ -82559,9 +82559,12 @@ C NITROGEN K-SHELL IONISATION
       IF(EN.LE.(2.0*EION(3))) GO TO 41
       PEQION(3,I)=PEQEL(2,(I-IOFFION(3)))
 C CORRECT THE IONISATION FOR SPLIT INTO KSHELLS
-      QION(1,I)=QION(1,I)-AUGKC*QION(2,I)-AUGKN*QION(3,I)
+C NIMBOLTZ FIX MB-48: LABEL 41 MOVED HERE FROM THE ATTACHMENT.
+C               THE CORRECTION WAS SKIPPED BELOW 2*EION(3) =
+C               803 EV (K-SHELLS COUNTED TWICE ABOVE 285 EV)
+   41 QION(1,I)=QION(1,I)-AUGKC*QION(2,I)-AUGKN*QION(3,I)
 C ATTACHMENT
-   41 Q(4,I)=0.0
+      Q(4,I)=0.0
       QATT(1,I)=Q(4,I)  
 C                                                     
       Q(5,I)=0.0                                                     
