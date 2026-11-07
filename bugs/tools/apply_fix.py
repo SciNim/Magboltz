@@ -469,5 +469,10 @@ elif fx=='MB-55':
     edit('GAS4','     /8.55D-5,7.86D-5,78.27D-5,6.78D-5,6.35D-5,5.63D-5,5.07D-5/',
          ['     /8.55D-5,7.86D-5,7.27D-5,6.78D-5,6.35D-5,5.63D-5,5.07D-5/'],
          ['MB-55: WAS 78.27D-5 (STRAY DIGIT); GAS3 (HELIUM 4) HAS 7.27D-5'])
+elif fx=='MB-56':
+    edit('GAS25','    4 PJ(K)=(2.0*AK-1.0)*DEXP(-AK*(AK+1.0)*B0/AKT)',
+         ['    4 PJ(K)=(2.0*AK+1.0)*DEXP(-AK*(AK+1.0)*B0/AKT)'],
+         ['MB-56: WAS (2.0*AK-1.0); THE DEGENERACY OF J IS 2J+1 (J=0 ENTERS',
+          'THE SUM BELOW AS 1; CO, METHANOL, ETHANOL, PROPANOLS USE 2J+1)'])
 else: sys.exit('unknown fix')
 open(F,'w').write('\n'.join(L))
