@@ -93106,8 +93106,12 @@ C USE OKHRIMOVSKKY FOR INELASTICS
     3 KIN(J)=2
 C                                                                             
       NEL=131 
-      NVIBL=19
-      NVIBH=19
+C NIMBOLTZ FIX MB-47: WAS 19 AS IN GAS45; XVIBL/YVIBL HERE HAVE 21
+C               POINTS
+      NVIBL=21
+C NIMBOLTZ FIX MB-47: WAS 19 AS IN GAS45; XVIBH/YVIBH HERE HAVE 20
+C               POINTS
+      NVIBH=20
       NVIBM=18
       NTRP1=12   
       NTRP2=12
@@ -93128,7 +93132,9 @@ C
       NION5=89
 C
       E(1)=0.0                                                          
-      E(2)=2.0*EMASS/(114.0416*AMU)                                     
+C NIMBOLTZ FIX MB-47: WAS 114.0416, THE MASS OF C3F4H2 (GAS45); C4F7N
+C               IS 195.0383
+      E(2)=2.0*EMASS/(195.0383*AMU)
       E(3)=11.0                                                        
       E(4)=0.0                                                          
       E(5)=0.0                                                          
