@@ -324,5 +324,146 @@ elif fx=='MB-43':
          ['      DCZ2=AIS*DSQRT(DMAX1(0.0D0,1.0D0-DCX2*DCX2-DCY2*DCY2))'],
          ['MB-43: NEAR A TURNING POINT ROUNDING CAN MAKE THE ARGUMENT',
           '-1E-16; DCZ2 WAS NAN AND THE AVALANCHE COULD NOT END'])
+elif fx=='MB-44':
+    edit('GAS7',' 3710 QIN(2,I)=Y4DSUM(N4DSUM)*(X4DSUM(N4DSUM)/EN)**3*1.0D-18',
+         [' 3710 QIN(23,I)=Y4DSUM(N4DSUM)*(X4DSUM(N4DSUM)/EN)**3*1.0D-18'],
+         ['MB-44: WAS QIN(2,I): THE 4D-SUM TAIL OVERWROTE LEVEL 2 (1S4)',
+          'ABOVE 100 EV AND LEFT LEVEL 23 EMPTY'])
+elif fx=='MB-45':
+    edit('GAS61','      QIN(7,I)=QIN(7,1)*APOPV3/DEGV3*1.D-16',
+         ['      QIN(7,I)=QIN(7,I)*APOPV3/DEGV3*1.D-16'],
+         ['MB-45: WAS QIN(7,1), I.E. THE FINAL VALUE OF THE FIRST BIN',
+          'TIMES 1E-16 AGAIN (V3 SUPERELASTIC ABOUT 1E-33 CM2)'])
+    edit('GAS61','  465 QIN(7,I)=YVBV3(NVIBV3)*(XVBV3(NVIBV3)/(EN-EIN(8)))**2',
+         ['  465 QIN(7,I)=YVBV3(NVIBV3)*(XVBV3(NVIBV3)/(EN+EIN(8)))**2'],
+         ['MB-45: WAS (EN-EIN(8)); THE SUPERELASTIC ENERGY IS EN+EIN(8)',
+          'AS IN THE TABLE BRANCH AND IN V2, V4, V1'])
+elif fx=='MB-46':
+    s,e=body('GAS31')
+    i=next(k for k in range(s,e) if L[k].startswith('      QIN(2,I)=DBK*DLOG('))
+    assert L[i+1].rstrip()=='     /*PJ(2)*AJG2/(AJG*(2.0*AJ+1.0)*EN)',L[i+1]
+    L[i:i+2]=['C NIMBOLTZ FIX MB-46: WAS PJ(2) (POPULATION OF J=1); THE INITIAL',
+              'C               STATE OF 00-->10 IS THE GROUND STATE PJ(1)',
+              L[i],'     /*PJ(1)*AJG2/(AJG*(2.0*AJ+1.0)*EN)']
+    edit('GAS31','     /*(PJ(4)*AJG2+PJ(5)*(AJG2+1.0))/(AJG*(2.0*AJ+1.0)*EN)',
+         ['     /*(PJ(4)*AJG2+PJ(5)*(AJG2-1.0))/(AJG*(2.0*AJ+1.0)*EN)'],
+         ['MB-46: WAS (AJG2+1.0); THE K=1 WEIGHT IS AJG**2-K**2 AS IN ALL',
+          'OTHER TRANSITIONS (QIN(3) IS IN THE STATEMENT ABOVE)'])
+    s,e=body('GAS31')
+    i=next(k for k in range(s,e-1) if L[k].rstrip()=='      AJG=1.0' and L[k+1].rstrip()=='      AJG=2.0')
+    L[i:i+1]=['C NIMBOLTZ FIX MB-46: WAS AJG=1.0 (OVERWRITTEN BELOW), SO AJ KEPT',
+              'C               2.0 FROM 20-->10; THE INITIAL J OF 10-->20 IS 1',
+              '      AJ=1.0']
+elif fx=='MB-47':
+    edit('GAS49','      E(2)=2.0*EMASS/(114.0416*AMU)',['      E(2)=2.0*EMASS/(195.0383*AMU)'],
+         ['MB-47: WAS 114.0416, THE MASS OF C3F4H2 (GAS45); C4F7N IS 195.0383'])
+    edit('GAS49','      NVIBL=19',['      NVIBL=21'],
+         ['MB-47: WAS 19 AS IN GAS45; XVIBL/YVIBL HERE HAVE 21 POINTS'])
+    edit('GAS49','      NVIBH=19',['      NVIBH=20'],
+         ['MB-47: WAS 19 AS IN GAS45; XVIBH/YVIBH HERE HAVE 20 POINTS'])
+elif fx=='MB-48':
+    s,e=body('GAS44')
+    i=next(k for k in range(s,e) if L[k].rstrip()=='C CORRECT THE IONISATION FOR SPLIT INTO KSHELLS')
+    assert [x.rstrip() for x in L[i-2:i+4]]==['      IF(EN.LE.(2.0*EION(3))) GO TO 41',
+        '      PEQION(3,I)=PEQEL(2,(I-IOFFION(3)))',
+        'C CORRECT THE IONISATION FOR SPLIT INTO KSHELLS',
+        '      QION(1,I)=QION(1,I)-AUGKC*QION(2,I)-AUGKN*QION(3,I)',
+        'C ATTACHMENT','   41 Q(4,I)=0.0'],L[i-2:i+4]
+    L[i:i+4]=['C CORRECT THE IONISATION FOR SPLIT INTO KSHELLS',
+              'C NIMBOLTZ FIX MB-48: LABEL 41 MOVED HERE FROM THE ATTACHMENT.',
+              'C               THE CORRECTION WAS SKIPPED BELOW 2*EION(3) =',
+              'C               803 EV (K-SHELLS COUNTED TWICE ABOVE 285 EV)',
+              '   41 QION(1,I)=QION(1,I)-AUGKC*QION(2,I)-AUGKN*QION(3,I)',
+              'C ATTACHMENT','      Q(4,I)=0.0']
+elif fx=='MB-49':
+    c=['MB-49: WAS GO TO 151, THE LOOP\'S OWN END, SO J=NION ALWAYS AND',
+       'THE K-SHELL WAS EXTRAPOLATED FROM THE LAST TABLE INTERVAL']
+    edit('GAS29','      IF(EN.LE.XION11(J)) GO TO 151',['      IF(EN.LE.XION11(J)) GO TO 152'],c)
+    edit('GAS43','      IF(EN.LE.XION1(J)) GO TO 151',['      IF(EN.LE.XION1(J)) GO TO 152'],c)
+elif fx=='MB-50':
+    for g in ('GAS29','GAS52'):
+        edit(g,'      PEQIN(L,I)=1.0-EPSIL',['      PEQIN((2*L-1),I)=1.0-EPSIL'],
+             ['MB-50: WAS PEQIN(L,I) (LEVELS 4-6); THE DIPOLE INELASTICS OF',
+              'THIS LOOP ARE 2L-1 = 7, 9, 11 (CF. XSECDUM AND LOOP 385)'])
+elif fx=='MB-51':
+    c=lambda n,m:['MB-51: WAS EIN(%d), THE THRESHOLD OF ANOTHER LEVEL; THIS IS'%m,
+                  'LEVEL %d'%n]
+    edit('GAS9','  417 IF(EN.LE.(EIN(21))) GO TO 418',['  417 IF(EN.LE.(EIN(20))) GO TO 418'],c(20,21))
+    for g in ('GAS21','GAS47'):
+        edit(g,'  727 IF(EN.LE.EIN(91)) GO TO 728',['  727 IF(EN.LE.EIN(98)) GO TO 728'],c(98,91))
+    for g in ('GAS22','GAS48'):
+        edit(g,'  744 IF(EN.LE.EIN(114)) GO TO 745',['  744 IF(EN.LE.EIN(115)) GO TO 745'],c(115,114))
+        edit(g,'  761 IF(EN.LE.EIN(131)) GO TO 762',['  761 IF(EN.LE.EIN(132)) GO TO 762'],c(132,131))
+    edit('GAS23','      IF(EN.LE.EIN(194)) GO TO 825',['      IF(EN.LE.EIN(199)) GO TO 825'],c(199,194))
+    edit('GAS60','  450 IF(EN.LE.(EIN(26))) GO TO 451',['  450 IF(EN.LE.(EIN(25))) GO TO 451'],c(25,26))
+    edit('GAS60','  452 IF(EN.LE.(EIN(28))) GO TO 453',['  452 IF(EN.LE.(EIN(27))) GO TO 453'],c(27,28))
+    edit('GAS61','  632 IF(EN.LE.EIN(18)) GO TO 633',['  632 IF(EN.LE.EIN(19)) GO TO 633'],c(19,18))
+elif fx=='MB-52':
+    for n,nxt in ((25,376),(26,379),(27,382)):
+        lab={25:3751,26:3781,27:3811}[n]
+        edit('GAS7',' %d IF(EN.LE.(2.0*EIN(%d))) GO TO %d'%(lab,n,nxt),
+             [' %d IF(EN.LE.(2.0*EIN(%d))) GO TO %d'%(lab,n,nxt),
+              '      PEQIN(%d,I)=PEQEL(2,(I-IOFFN(%d)))'%(n,n)],
+             ['MB-52: THE COPY OF THE ELASTIC ANGULAR DISTRIBUTION WAS',
+              'MISSING AFTER THIS TEST (ALL OTHER 47 LEVELS HAVE IT)'])
+    s,e=body('GAS11')
+    i=next(k for k in range(s,e) if L[k].rstrip()=='      PEQION(2,I)=0.5D0')
+    assert L[i+1].rstrip()=='      IF(NANISO.EQ.2) PEQIN(2,I)=0.0',L[i+1]
+    L[i+1:i+2]=['C NIMBOLTZ FIX MB-52: WAS PEQIN(2,I) (LEVEL 2, RESET LATER ANYWAY)',
+                '      IF(NANISO.EQ.2) PEQION(2,I)=0.0']
+    edit('GAS15','  629 IF(EN.GT.(3.0*EIN(59))) PEQIN(61,I)=PEQEL(2,(I-IOFFN(59)))',
+         ['  629 IF(EN.GT.(3.0*EIN(59))) PEQIN(59,I)=PEQEL(2,(I-IOFFN(59)))'],
+         ['MB-52: WAS PEQIN(61,I); THIS IS LEVEL 59 (B1 SIGMA)'])
+    edit('GAS18',' 1776 IF(EN.LE.(2.0*EIN(147))) GO TO 776',
+         [' 1776 IF(EN.LE.(2.0*EIN(156))) GO TO 776'],
+         ['MB-52: WAS 2.0*EIN(147), ANOTHER LEVEL; THIS IS LEVEL 156'])
+    edit('GAS23','      IF(EN.GT.4.0) GO TO 425',['      IF(EN.LT.4.0) GO TO 425'],
+         ['MB-52: WAS EN.GT.4.0 (INVERTED): VIBRATIONS ARE ISOTROPIC BELOW',
+          '4 EV, SEE THE NOTE AT LEVEL 111 AND THE OTHER VIBRATIONS'])
+    s,e=body('GAS23')
+    i=next(k for k in range(s,e) if L[k].rstrip()=='      QIN(128,I)=(A*EN+B)*1.D-18')
+    assert L[i+1].rstrip()=='      GO TO 515' and L[i+2].startswith(' 5121 QIN(128,I)=') and L[i+3].rstrip()=='  515 CONTINUE',L[i:i+4]
+    assert not any(re.match(r'^ *5122 ',x) or 'GO TO 5122' in x for x in L[s:e])
+    L[i+1:i+3]=['      GO TO 5122',L[i+2],
+                'C NIMBOLTZ FIX MB-52: THE COPY OF THE ELASTIC ANGULAR DISTRIBUTION',
+                'C               WAS MISSING FOR LEVEL 128 (LEVELS 123-127 AND 129',
+                'C               HAVE IT)',
+                ' 5122 PEQIN(128,I)=PEQEL(2,(I-IOFFN(128)))']
+    edit('GAS31','      IF(EN.GT.2.0*EIN(32)) PEQIN(32,I)=PEQIN(32,(I-IOFFN(32)))',
+         ['      IF(EN.GT.2.0*EIN(32)) PEQIN(32,I)=PEQEL(2,(I-IOFFN(32)))'],
+         ['MB-52: WAS PEQIN(32,...), WHICH IS 0; ALL OTHER LEVELS COPY PEQEL'])
+    edit('GAS60','      PEQIN(24,I)=PEQEL(2,(I-IOFFN(25)))',['      PEQIN(24,I)=PEQEL(2,(I-IOFFN(24)))'],
+         ['MB-52: WAS IOFFN(25), THE OFFSET OF ANOTHER LEVEL'])
+elif fx=='MB-53':
+    edit('GAS15','  693 QIN(72,I)=YVIB20(NVIB)*(XVIB(NVIB)/EN)*1.D-16',
+         ['  693 QIN(72,I)=YVIB21(NVIB)*(XVIB(NVIB)/EN)*1.D-16'],
+         ['MB-53: WAS YVIB20 (LEVEL 71); LEVEL 72 IS INTERPOLATED IN YVIB21'])
+    for g in ('GAS22','GAS48'):
+        s,e=body(g)
+        i=next(k for k in range(s,e) if L[k].startswith('      QIN(105,I)=.003391/(EIN(105)*BETA2)'))
+        assert L[i+1].rstrip()=='     /(4.0*EIN(104)))-BETA2-DEN(I)/2.0)*BBCONST*EN/(EN+EIN(104)+BEF(4))',L[i+1]
+        L[i:i+2]=['C NIMBOLTZ FIX MB-53: WAS EIN(104) (LEVEL 104, COPIED) IN THE',
+                  'C               LOGARITHM AND THE DENOMINATOR',
+                  L[i],'     /(4.0*EIN(105)))-BETA2-DEN(I)/2.0)*BBCONST*EN/(EN+EIN(105)+BEF(4))']
+    edit('GAS25','      ARES=AMPV3R*(EN*EIN(58))*(A*(EN+EIN(58))+B)/EN',
+         ['      ARES=AMPV3R*(EN+EIN(58))*(A*(EN+EIN(58))+B)/EN'],
+         ['MB-53: WAS (EN*EIN(58)); DETAILED BALANCE NEEDS EN+EIN(58) AS',
+          'IN LEVEL 55'])
+    edit('GAS16','      RAT=YSG13M(NSNG13)*(XSNG12(NSNG13)/EN)',
+         ['      RAT=YSG13M(NSNG13)*(XSNG13(NSNG13)/EN)'],
+         ['MB-53: WAS XSNG12 (SAME LAST VALUE, NO EFFECT)'])
+    edit('GAS18','      IF(EN.GT.XV101(NV300)) GO TO 293',['      IF(EN.GT.XV300(NV300)) GO TO 293'],
+         ['MB-53: WAS XV101 (SAME LAST VALUE, NO EFFECT)'])
+elif fx=='MB-54':
+    def off(g,first,n):
+        s,e=body(g)
+        idx=[k for k in range(s,e) if L[k].rstrip()==first.rstrip()]
+        assert len(idx)==1,(g,first,idx)
+        i=idx[0]
+        L[i:i+n]=['C NIMBOLTZ FIX MB-54: DEBUG OUTPUT SWITCHED OFF']+['C'+x[1:] for x in L[i:i+n]]
+    for g in ('GAS45','GAS49'):
+        off(g,'      WRITE(6,9011) EN,QELA,QMMT,QSUP,QVIB,QIN(13,I),QTRIP,',2)
+    off('GAS49',"      WRITE(6, *)'--------------XSEC--------------'",3)
+    off('GAS61','      WRITE(6,392) ATRP',1)
 else: sys.exit('unknown fix')
 open(F,'w').write('\n'.join(L))
