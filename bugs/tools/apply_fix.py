@@ -465,5 +465,9 @@ elif fx=='MB-54':
         off(g,'      WRITE(6,9011) EN,QELA,QMMT,QSUP,QVIB,QIN(13,I),QTRIP,',2)
     off('GAS49',"      WRITE(6, *)'--------------XSEC--------------'",3)
     off('GAS61','      WRITE(6,392) ATRP',1)
+elif fx=='MB-55':
+    edit('GAS4','     /8.55D-5,7.86D-5,78.27D-5,6.78D-5,6.35D-5,5.63D-5,5.07D-5/',
+         ['     /8.55D-5,7.86D-5,7.27D-5,6.78D-5,6.35D-5,5.63D-5,5.07D-5/'],
+         ['MB-55: WAS 78.27D-5 (STRAY DIGIT); GAS3 (HELIUM 4) HAS 7.27D-5'])
 else: sys.exit('unknown fix')
 open(F,'w').write('\n'.join(L))
