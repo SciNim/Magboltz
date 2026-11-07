@@ -2,8 +2,10 @@
 
 Source: `magboltz-11.21.f` (S. Biagi; the program prints `VERSION 11.20`),
 branch `master` of this repository. Line numbers below refer to that file.
-Branch `fixes` has one commit per defect (`MB-01` … `MB-43`); every change,
+Branch `fixes` has one commit per defect (`MB-01` … `MB-56`); every change,
 except the 281 loop starts of MB-10, carries a `C NIMBOLTZ FIX MB-nn:` comment.
+Cases where the intended behaviour is not clear from the code are not
+changed; they are listed as questions in `QUESTIONS.md`.
 
 The defects were found while porting Magboltz to Nim with the requirement
 that the port reproduce the Fortran output bit for bit. Nim checks array
@@ -63,6 +65,19 @@ a guess, this is said explicitly ("Interpretation").
 | MB-41 | ALPCALCT | all, thermal | block missing in one of 8 sibling drivers | thermal B = 0 SST/TOF run with α ≈ η | plane spacing not shortened: up to 30× too long; SF6 near its critical field does not finish (> 75 min instead of 130 s) |
 | MB-42 | ALPCLCA/AT/B/BT/C/CT | all | wrong unit / wrong variable / ×100 for /100 | every SST/TOF run with B ≠ 0 | /CTWNER/ errors (read by Garfield++ as percent) absolute 1/cm, stale (ALPCLCB) or 10⁴× too large (ALPCLCBT); not printed by Magboltz |
 | MB-43 | MONTEFDT | all, thermal | √ of a rounding-negative number | thermal B = 0 SST run, electron at a turning point | NaN direction; usually absorbed by a null collision, else the run never ends (Ar/HFO-1234ze, Ar/C4F7N at 1 kV/cm) |
+| MB-44 | GAS7 | Xe | `QIN(2,I)` for `QIN(23,I)` | EN > 100 eV | the 1S4 resonance (f = 0.26) replaced by the 4D-sum tail (10⁻⁴ of it); level 23 empty |
+| MB-45 | GAS61 | CCl4 | `QIN(7,1)` for `QIN(7,I)`; `EN-EIN(8)` for `EN+EIN(8)` | always | V3 superelastic 10⁻³⁵ cm² instead of ~10⁻¹⁷; Ar/CCl4 90/10, 100 V/cm: drift +5.8 %, attachment −7 % when fixed |
+| MB-46 | GAS31 | NH3 | wrong population, sign and J in 3 of 28 rotational transitions | always | J 0→1 ×2.7, 2→1 ×1.18 too large, 1→2 ×0.6 too small; mean energy −1.3 % at 0.1–1 kV/cm when fixed |
+| MB-47 | GAS49 | C4F7N | mass and table lengths copied from GAS45 | always | mass 114.04 instead of 195.04, resonance tails cut; transport within 0.3 % |
+| MB-48 | GAS44 | TMA | correction inside the wrong branch | 285–803 eV | K-shells counted twice in the counting ionisation (≤ 0.7 %) |
+| MB-49 | GAS29, GAS43 | C2F6, C2H2F4 | `GO TO` the loop's own end | EN > 285 eV | carbon K-shell extrapolated from the last table interval (constant instead of rising ×20) |
+| MB-50 | GAS29, GAS52 | C2F6, C3F8 | `PEQIN(L,I)` for `PEQIN(2*L-1,I)` | always | 3 dipole vibrations isotropic, 3 superelastic levels overwritten; drift +8 … +24 %, attachment ×2 at 10 kV/cm when fixed |
+| MB-51 | GAS9/21/22/23/47/48/60/61 | ethane, H2, D2, CO, p-H2, o-D2, SiH4, CCl4 | threshold test of another level | near threshold | 3 levels missing over 0.14–0.5 eV; 6 tests too low, no effect |
+| MB-52 | GAS7/11/15/18/23/31/60 | Xe, isobutane, O2, N2O, CO, NH3, SiH4 | anisotropy missing, inverted or stored in another level | always | 10 levels or channels isotropic (or anisotropic) where the others are not |
+| MB-53 | GAS15/16/18/22/25/48 | O2, N2, N2O, D2, DME, o-D2 | wrong table or energy in a formula | always / above table | O2 level 72 tail ×0.26; D2 level 105 up to ×2.9; DME level 57 resonance ×0.18; 2 without effect |
+| MB-54 | GAS45, GAS49, GAS61 | HFO-1234ze, C4F7N, CCl4 | debug output left on | every run | 4000 lines (GAS45, 49) or one line (GAS61) printed per call |
+| MB-55 | GAS4 | He-3 | stray digit `78.27D-5` | 650–750 eV | levels 17, 25 ×10.7 at 700 eV |
+| MB-56 | GAS25 | DME | degeneracy `2J-1` for `2J+1` | always | rotational populations wrong (J=1 ×0.4); mean energy −7 % at 0.1–1 kV/cm when fixed (with MB-53) |
 
 Affected gases (cross sections or angular distributions): Xe (7), propane
 (10), isobutane (11, diagnostic only), H2O (14), O2 (15), N2O (18,
@@ -78,6 +93,11 @@ thermal calculations with HFO-1234ze, C4F7N or CF3Br (MB-38), and
 the printed attachment rate of B⊥E SST/TOF runs without ionisation (MB-40),
 thermal B = 0 SST/TOF runs near the critical field (MB-41, MB-43), and the
 Townsend errors left in /CTWNER/ by every SST/TOF run with B ≠ 0 (MB-42).
+The gas-routine series MB-44 … MB-56 adds He-3 (4), Xe (7), ethane (9),
+isobutane (11), O2 (15), N2 (16, no effect), N2O (18), H2 and p-H2 (21,
+47), D2 and o-D2 (22, 48), CO (23), DME (25), C2F6 (29), NH3 (31),
+C2H2F4 (43), TMA (44), HFO-1234ze (45, output only), C4F7N (49), C3F8
+(52), SiH4 (60) and CCl4 (61).
 
 ## Impact on results
 
@@ -120,6 +140,32 @@ at 100/1000/10000 V/cm agree within statistical errors except C2F6 at
 below about 0.01 eV or at the boundaries of tables, or change angular
 distributions of weak channels.
 
+**Gas routines (MB-44 … MB-56).** Before/after runs (fork at MB-43 vs.
+MB-56, 4·10⁷ collisions (NH3 8·10⁸, Ar/NH3 4·10⁸, DME 1.6·10⁸), 20 °C,
+760 Torr, thermal motion, same random sequence):
+
+| gas, E | drift (µm/ns) | mean energy (eV) | attachment (1/cm) | fixes |
+|---|---|---|---|---|
+| C2F6, 1 kV/cm | 67.46 → 72.94 (+8.1 %) | 0.0664 → 0.0682 | — | MB-50 |
+| C2F6, 10 kV/cm | 109.6 → 123.5 (+12.7 %) | 0.703 → 0.976 | 14.9 → 28.7 | MB-50 |
+| C3F8, 1 kV/cm | 44.61 → 48.82 (+9.4 %) | 0.0550 → 0.0565 | — | MB-50 |
+| C3F8, 10 kV/cm | 107.2 → 132.7 (+23.8 %) | 0.324 → 0.469 | 17.3 → 37.0 | MB-50 |
+| Ar/CCl4 90/10, 100 V/cm | 1.122 → 1.187 (± 1.5 %) | 0.0241 → 0.0256 | 1.039e7 → 9.65e6 | MB-45 |
+| CCl4, 1 kV/cm | 1.153 → 1.178 (± 2.5 %) | 0.0242 → 0.0255 | 1.011e8 → 9.73e7 | MB-45 |
+| DME, 1 kV/cm | 3.133 → 3.012 (± 0.8 %) | 0.0431 → 0.0400 | — | MB-53, 56 |
+| NH3, 1 kV/cm | 1.763 → 1.765 (± 0.45 %) | 0.0387 → 0.0382 | — | MB-46, 52 |
+| Ar/NH3 90/10, 1 kV/cm | 30.01 → 30.16 (± 0.09 %) | 0.3754 → 0.3737 | — | MB-46, 52 |
+| Ar/C4F7N 90/10, 1 kV/cm | 27.49 → 27.43 (± 0.15 %) | 0.0772 → 0.0770 | 3.825e4 → 3.834e4 | MB-47 |
+
+Unchanged within errors: Xe 50–400 kV/cm (MB-44, α within 0.4 %),
+C4F7N 300 kV/cm and CO2/C4F7N 95/5 at 1 and 10 kV/cm (MB-47), CO 1 and
+10 kV/cm (MB-52), DME 10 kV/cm. Ethane and SiH4 at 10 kV/cm give
+identical output (MB-51: for SiH4 the levels lie above the energy range
+of 4 eV; for ethane the change, ≤ 1.5e-19 cm² over 0.14 eV, decided no
+collision).
+The cross-section changes of the other fixes are listed in their
+sections.
+
 **Undefined values (MB-03, 05, 06, 11–16, 19, 20).** In a normal build
 these take whatever value the memory has. Large local arrays are static
 and zero, small ones are on the stack. The results are then deterministic
@@ -159,6 +205,16 @@ NaN-initialised memory (MB-19/20).
    ELIMIT*, GAS21/GAS47, …) aligned statement by statement; a token
    substitution that occurs only once between two routines is reported.
    Found MB-24, MB-28, MB-29.
+8. **Rewriting the gas routines by hand** (the port has one module per
+   gas built on shared helpers; every module must reproduce the Fortran
+   bit for bit, so every irregularity has to be coded explicitly and
+   stands out), then `tools/idxscan.py`: every threshold test, anisotropy
+   copy, table end and formula whose level index differs from the
+   level's own (MB-44, 51, 52, 53). The remaining hits of the scan on
+   `fixes` are the deliberate ones (superelastic levels use the energy
+   of their partner, N2 copies level 121's distribution to 122–127, CO
+   level 111 uses the offset of 112, which has the same |EIN|).
+   Found MB-44 … MB-56.
 
 **AddressSanitizer / UBSan / valgrind.** Run afterwards for comparison:
 upstream built with `-fsanitize=address,undefined` on all decks of
@@ -677,6 +733,214 @@ arguments. Where upstream recovers, the fix only changes the random
 sequence: pure SF6 at 50 kV/cm, thermal, SST α = 171.8 / 175.5 /cm
 (± 2.2 %), η = 1576 / 1595 /cm (± 2.0 %), upstream / fixed.
 
+### MB-44 GAS7 (Xe): 4D-sum tail written into level 2
+
+Line 31470: above the end of the 4D-sum table (100 eV), the tail
+`3710 QIN(2,I)=Y4DSUM(N4DSUM)*(X4DSUM(N4DSUM)/EN)**3*1.0D-18` is stored in
+level 2 instead of level 23, the level the table above it fills. Level 2 is
+the 1S4 resonance (Born dipole, f = 0.260), computed earlier in the loop and
+overwritten here; level 23 stays 0. Above 100 eV one of the strongest
+optically allowed excitations of Xe is therefore 10⁻⁴ of its value: QIN(2) at 150/400 eV is 3.3e-21/1.7e-22
+instead of 3.4e-17/1.8e-17 cm². Fix: `QIN(23,I)`.
+Swarm results in pure Xe (20 °C, 760 Torr, 50–400 kV/cm) do not change
+within errors (α within 0.4 %): few electrons of a swarm pass 100 eV.
+The level matters for fast electrons (primary ionisation tracks).
+
+### MB-45 GAS61 (CCl4): V3 superelastic from the first energy bin
+
+Line 101446: `QIN(7,I)=QIN(7,1)*APOPV3/DEGV3*1.D-16`. For I=1 this is the
+intended scaling of the value just computed; for every later bin it takes
+the final value of bin 1 (already ×1e-16) and scales it by 1e-16 again.
+The V3 superelastic cross section (de-excitation of the asymmetric stretch,
+0.0922 eV, populated at a few per cent at room temperature) is 9.6e-35 cm²
+at every energy instead of 2e-17 … 4e-19 cm². The other three
+superelastic vibrations (V2, V4, V1) use `QIN(n,I)`. In the same block the
+tail above the table (line 101443) uses `(EN-EIN(8))` where the table
+branch and the other vibrations use the superelastic energy `EN+EIN(8)`.
+Fix: `QIN(7,I)` and `EN+EIN(8)`. Effect (upstream → fixed): Ar/CCl4 90/10
+at 100 V/cm drift 1.122 → 1.187 µm/ns (+5.8 % ± 1.5 %), mean energy
++6.2 %, attachment rate −7.1 %; pure CCl4 at 1 kV/cm mean energy +5.4 %,
+attachment −3.7 %; at 10 kV/cm attachment −1.2 %.
+
+### MB-46 GAS31 (NH3): rotational weights of the transitions 0→1, 2→1, 1→2
+
+NH3 is treated as a symmetric top; each rotational transition J→J±1 sums
+the Born dipole cross section over K with the state populations PJ(J,K)
+and the factor (J′² − K²)/(J′(2J+1)) (J′ the larger J). Three of the 28
+transitions break this pattern:
+- level 2 (00→10, line 69296): weighted with PJ(2), the population of
+  J=1, K=0, instead of the initial state PJ(1) (J=0). Level 1 (10→00)
+  correctly uses PJ(2).
+- level 3 (20→10 + 21→11, line 69303): `PJ(5)*(AJG2+1.0)` for K=1; every
+  other transition has `AJG2-K²`, here `AJG2-1.0`.
+- level 4 (10→20 + 11→21, line 69305): `AJG=1.0` followed by `AJG=2.0`;
+  the first is evidently meant as `AJ=1.0`. AJ keeps 2.0 from level 3, so
+  2J+1 = 5 instead of 3.
+
+Cross sections upstream vs fixed: level 2 is ×2.7 too large, level 3 ×1.18
+too large, level 4 ×0.6 too small (all energies). Fix: PJ(1), `AJG2-1.0`,
+`AJ=1.0`. Effect (8·10⁸ collisions; Ar/NH3 4·10⁸): pure NH3 at 100 V/cm
+and 1 kV/cm mean energy 0.0384 → 0.0379 and 0.0387 → 0.0382 eV (−1.3 %,
+± 0.03 %), drift
+unchanged within errors (± 0.45 % at 1 kV/cm); Ar/NH3 90/10 at 1 kV/cm
+drift 30.01 → 30.16 µm/ns (+0.5 % ± 0.09 %).
+
+### MB-47 GAS49 (C4F7N): mass and table lengths of GAS45
+
+GAS49 was built from GAS45 (C3F4H2, HFO-1234ze). Line 92826 keeps its
+molecular mass, `E(2)=2.0*EMASS/(114.0416*AMU)`; C4F7N has 195.0383 (C
+12.0107, F 18.9984, N 14.0067, the atomic masses behind 114.0416). The
+elastic energy loss per collision, 2m/M, is 1.7× too large. Lines
+92804/92805 keep NVIBL=NVIBH=19, the lengths of the GAS45 resonance
+tables; the GAS49 tables XVIBL/YVIBL and XVIBH/YVIBH have 21 and 20 points,
+so the low resonance is cut at 2.725 instead of 3.025 eV and the high one
+at 12.0 instead of 12.7 eV (the tails are small). Fix: 195.0383, 21, 20.
+Effect: Ar/C4F7N 90/10 at 1 kV/cm drift −0.22 % (± 0.15 %), mean
+energy −0.26 % (± 0.09 %), attachment +0.24 % (± 0.07 %);
+CO2/C4F7N 95/5 at 1 and 10 kV/cm and pure C4F7N at 300 kV/cm unchanged
+within errors. *Interpretation:* if the 2025 cross sections were fitted
+with this mass, the fit absorbed it; see QUESTIONS.md Q-03, Q-04 (E(3)
+and the nitrogen K-shell look copied as well).
+
+### MB-48 GAS44 (TMA): K-shell correction only above 803 eV
+
+Line 82272: `QION(1,I)=QION(1,I)-AUGKC*QION(2,I)-AUGKN*QION(3,I)` takes
+the carbon and nitrogen K-shells out of the counting ionisation, but it
+sits after `IF(EN.LE.(2.0*EION(3))) GO TO 41`, the start of the angular
+distribution of the nitrogen K-shell. It is skipped below 2·401.6 =
+803 eV, so between the carbon K-edge (285 eV) and 803 eV the K-shell
+ionisation is counted twice. O2 and N2 apply the same correction after
+their K-shell, unconditionally. Fix: label 41 moved to the correction.
+QION(1) changes by −0.2 % (400 eV) … −0.7 % (800 eV).
+
+### MB-49 GAS29, GAS43 (C2F6, C2H2F4): K-shell search loop jumps to its own end
+
+Lines 66042 (GAS29), 81212 (GAS43): `DO 151 J=2,N / IF(EN.LE.X(J)) GO TO
+151 / 151 CONTINUE / J=N / 152 A=...`. The jump goes to the loop's own
+CONTINUE instead of 152, so the loop always runs to the end and J=N: the
+carbon K-shell is extrapolated from the last table interval at every
+energy, a constant 3.7e-20 cm² (fixed: 1.2e-20 at 290 eV rising to 7.5e-19
+at 1 keV). Through CRFAC this also changes the other ionisation channels
+above 285 eV. Fix: `GO TO 152` (the fluorine K-shell next to it has it).
+
+### MB-50 GAS29, GAS52 (C2F6, C3F8): vibrational anisotropy stored in the wrong levels
+
+Lines 66308 (GAS29), 95746 (GAS52). The vibrational levels come in groups
+(superelastic dipole / superelastic resonance = 1–6, inelastic dipole /
+resonance = 7–12, for V6, V5, V7 at 0.065, 0.100, 0.155 eV). Loop
+`DO 385 L=1,3` stores the dipole angular distribution of the superelastic
+levels in `PEQIN((2*L-1),I)` (1, 3, 5); loop `DO 395 L=4,6` computes the
+same for the inelastic levels 2L−1 = 7, 9, 11 — `XSECDUM(2*L-1)` and
+`QIN((2*L-1),I)` in the same loop — but stores it in `PEQIN(L,I)`, i.e.
+levels 4, 5, 6. So the three dipole vibrations scatter isotropically, and
+levels 4 and 6 (resonances; C2F6 1−EPSRES, C3F8 isotropic) and 5 lose
+their own distributions. Fix:
+`PEQIN((2*L-1),I)`. PEQIN(7) at 0.5/2 eV: 0 → 0.82/0.91.
+This is the largest effect of this series (upstream → fixed, 20 °C,
+760 Torr):
+
+| gas, E | drift (µm/ns) | mean energy (eV) | attachment (1/cm) |
+|---|---|---|---|
+| C2F6, 1 kV/cm | 67.46 → 72.94 (+8.1 %) | 0.0664 → 0.0682 | — |
+| C2F6, 10 kV/cm | 109.6 → 123.5 (+12.7 %) | 0.703 → 0.976 (+39 %) | 14.9 → 28.7 |
+| C3F8, 1 kV/cm | 44.61 → 48.82 (+9.4 %) | 0.0550 → 0.0565 | — |
+| C3F8, 10 kV/cm | 107.2 → 132.7 (+23.8 %) | 0.324 → 0.469 (+45 %) | 17.3 → 37.0 |
+
+(statistical errors of the drift velocities ≤ 0.04 %; same random
+sequence in both runs).
+
+### MB-51 Threshold test of another level
+
+A level's cross section is computed after `IF(EN.LE.EIN(n)) GO TO …` with
+n its own index everywhere except:
+
+| gas | level | test on | lines |
+|---|---|---|---|
+| GAS9 ethane | 20 (9.291 eV) | EIN(21) = 9.433 | 34578 |
+| GAS60 SiH4 | 25 (10.575 eV) | EIN(26) = 10.85 | 99958 |
+| GAS60 SiH4 | 27 (11.25 eV) | EIN(28) = 11.75 | 99972 |
+| GAS21, GAS47 H2, p-H2 | 98 (15.602 eV) | EIN(91) = 13.994 | 56159, 89391 |
+| GAS22, GAS48 D2, o-D2 | 115 (14.747 eV) | EIN(114) = 14.741 | 58949, 92150 |
+| GAS22, GAS48 D2, o-D2 | 132 (16.207 eV) | EIN(131) = 16.115 | 59018, 92219 |
+| GAS23 CO | 199 (27.5 eV) | EIN(194) = 22.75 | 61785 |
+| GAS61 CCl4 | 19 (8.868 eV) | EIN(18) = 8.365 | 101551 |
+
+With the higher threshold (first three) the level is missing over 0.14–
+0.5 eV above its threshold (SiH4 QIN(27) at 11.7 eV: 0 instead of
+3.1e-18 cm²). With the lower one the Born formula is evaluated below the
+level's own threshold; there `DLOG(BETA2*GAMMA2*EMASS2/(4*EIN))` ≈
+ln(EN/EIN) is negative and the result is clamped to 0, so these five have
+no effect (checked in the printouts). Fix: the level's own EIN.
+
+### MB-52 Anisotropy missing, inverted or stored in another level
+
+The inelastic levels take the elastic angular distribution at the energy
+after the loss, `PEQIN(n,I)=PEQEL(2,(I-IOFFN(n)))`, above a multiple of
+their threshold. Exceptions:
+- GAS7 Xe levels 25–27 (2P3, 2P2, 2P1; lines 31492, 31505, 31518): the
+  test `IF(EN.LE.(2.0*EIN(n))) GO TO` is there, the copy after it is
+  missing; the other 47 levels have it. Isotropic → 0.80–0.89.
+- GAS11 isobutane (line 37555): `IF(NANISO.EQ.2) PEQIN(2,I)=0.0` in the
+  initialisation of ionisation channel 2 (should be PEQION(2,I), as
+  for channel 1); with NANISO=2 the channel keeps 0.5 (anisotropic) below
+  2·EION(2) = 34 eV instead of 0 (isotropic). PEQIN(2) is reset later.
+- GAS15 O2 line 45688: level 59 (b1Σg+) stores its distribution in
+  PEQIN(61,I): level 59 isotropic, level 61 gets level 59's between
+  3·EIN(59) and 6 eV.
+- GAS18 N2O line 51138: level 156 (triplets) tested on 2·EIN(147) instead
+  of 2·EIN(156): anisotropic from 17.7 eV instead of 22.8 eV.
+- GAS23 CO line 60973: vibration 115 has `IF(EN.GT.4.0) GO TO 425`, all
+  other vibrations `IF(EN.LT.4.0)` ("vibrations set to isotropic below
+  4.0 eV"): anisotropic below 4 eV, isotropic above. Line 61175: level
+  128 (a3Π v=5–10) jumps past the copy that levels 123–127 and 129 have.
+- GAS31 NH3 line 69683: `PEQIN(32,I)=PEQIN(32,(I-IOFFN(32)))` copies
+  PEQIN, which is 0, instead of PEQEL: V1+V3 isotropic.
+- GAS60 SiH4 line 99956: level 24 uses IOFFN(25), the offset of the next
+  level (0.25 eV higher).
+Fix: as the other levels. Effect on transport: CO at 1 and 10 kV/cm
+unchanged within errors; the others were not run.
+
+### MB-53 Wrong table or energy in a cross-section formula
+
+- GAS15 O2 line 45869: the tail of level 72 above the table uses YVIB20
+  (level 71), the table branch YVIB21: ×0.26.
+- GAS22, GAS48 D2, o-D2 lines 58910, 92111: level 105 (B′1Σ v=1) has
+  EIN(104), the energy of v=0, in the logarithm and the denominator of the
+  Born formula (copied from level 104): +190 % at 14 eV, +1…9 % above
+  16 eV. H2 (GAS21) has EIN(105).
+- GAS25 DME line 63750: resonance part of the superelastic level 57,
+  `AMPV3R*(EN*EIN(58))*(...)/EN` where detailed balance (and level 55)
+  has `(EN+EIN(58))`: the resonance part is EN·0.18 instead of EN+0.18
+  (×0.17–0.18), the level ×0.3–0.6 between 3 and 10 eV.
+- No effect (same last value): GAS16 N2 line 48657 XSNG12(NSNG13) for
+  XSNG13; GAS18 N2O line 50720 XV101(NV300) for XV300.
+
+### MB-54 GAS45, GAS49, GAS61: debug output
+
+GAS45 (line 84496) and GAS49 (94059) print a CSV line
+`EN,QELA,QMMT,QSUP,…` with `WRITE(6,9011)` in every one of the 4000
+energy bins, GAS49 then two header lines (94101); GAS61 prints
+`ATRP=` (100644). This goes into the Magboltz output of every run with
+these gases (4000 lines before the results). Commented out.
+
+### MB-55 GAS4 (He-3): stray digit in the 4 1F table
+
+Line 23710: `DATA Y41F/…,8.55D-5,7.86D-5,78.27D-5,6.78D-5,…`; the He-4
+table (GAS3) has `7.27D-5` at the same place (700 eV). Upstream QIN(17)
+(4 1F) and QIN(25), which scales the same table, are ×10.7 too large at
+700 eV and ×6 at 725 eV. Fix: 7.27D-5.
+
+### MB-56 GAS25 (DME): rotational populations weighted 2J−1
+
+Line 62751: `PJ(K)=(2.0*AK-1.0)*DEXP(-AK*(AK+1.0)*B0/AKT)`. The degeneracy
+of a rotational level J is 2J+1; the sum below starts with 1 for J=0, as
+2J+1 gives; CO, methanol, ethanol and the propanols (same model) use
+`(2.0*AK+1.0)`. Fix: `2.0*AK+1.0`. The J=1 population is ×0.4 too small
+(QIN(1) at 0.1 eV: 1.5e-16 → 3.7e-16 cm²), high J slightly too large.
+Effect with MB-53 (DME, upstream → fixed): mean energy −7.2 % (± 0.2 %)
+at 100 V/cm and 1 kV/cm, drift −3.9 % (± 0.8 %) at 1 kV/cm, unchanged at
+10 kV/cm.
+
 ## Inconsistencies left unchanged
 
 - When the energy loss exceeds the energy (`E.LT.EI`) just before the
@@ -714,6 +978,17 @@ sequence: pure SF6 at 50 kV/cm, thermal, SST α = 171.8 / 175.5 /cm
   ELIMIT (B = 0), MONTE tests `BTHETA.EQ.180` and runs MONTEC (any angle)
   instead of MONTEA. Both give the B ∥ E motion; only the rounding differs.
 
+- Gas routines: thresholds tested with `.LT.` in some places, `.LE.` in
+  others (GAS20, GAS54 NIN cut; GAS30 PEQION; GAS61 ionisation; GAS25
+  level 58), which differs only when EN equals the threshold exactly; N2
+  (GAS16) leaves QION(9), QION(10) at 0 at exactly EN = EION(10) and
+  QION(10) at exactly 120 eV.
+- Gas routines compute some quantities nobody reads: bremsstrahlung
+  levels beyond NIN (GAS44, GAS45 above 1 keV with EIN = 0, GAS60, GAS61),
+  QIONC/QIONG in GAS45, QELA in GAS54. GAS44 sets no NAME for NANISO=1
+  and uses DEN(1) for DEN(I) in its Born-Bethe term (DEN is 0). These and
+  the totals Q(1) (see QUESTIONS.md Q-13) have no effect.
+
 ## Not defects
 
 - With NSCALE reduced (reproduce.sh divides it by 10), a run with the long
@@ -734,5 +1009,14 @@ sequence: pure SF6 at 50 kV/cm, thermal, SST α = 171.8 / 175.5 /cm
   only as gfortran's `IEEE_INVALID_FLAG` note at the end of the run, or as
   a stop under `-ffpe-trap=invalid` (pure SF6, thermal, 95 kV/cm, with
   MB-41..43 fixed), so a trap build cannot be used on such decks.
+- GAS30 SF6 normalises the ground-state population APOPGS and then
+  resets it to 1.0; the comment says this is meant ("renormalise ground
+  state to allow for excitation x-sec from excited vibrational state").
+- GAS55 H2S subtracts the rotations QIN(1..4) from Q(2): the elastic table
+  is "elastic + effective rotation" (comment at its DATA).
+- GAS31 NH3: the harmonics (level 33) are not tested on EIN(33); the
+  resonance table they use starts at 4.5 eV, above it. Rotations and their
+  angular distributions are switched off above 1 keV in NH3 (and other
+  gases), by design.
 - The four non-comment lines longer than 72 columns (93915–93960) carry
   only trailing spaces beyond column 72.

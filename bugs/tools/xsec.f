@@ -4,8 +4,8 @@ C gas at 20 C, 760 Torr, on the MIXER energy grid (4000 steps up to
 C EFINAL). Used to show the effect of the bugs in bugs/README.md.
 C Input (stdin), list-directed, one case per line:
 C   NGS NANISO EFINAL 'ARRAY' IROW NPRINT
-C ARRAY is one of Q, QIN, PEQEL, PEQIN, QION, QATT; NPRINT energies
-C are printed, evenly spaced over the grid.
+C ARRAY is one of Q, QIN, PEQEL, PEQIN, QION, PEQION, QATT; NPRINT
+C energies are printed, evenly spaced over the grid.
       IMPLICIT REAL*8 (A-H,O-Z)
       IMPLICIT INTEGER*8 (I-N)
       CHARACTER*25 NAME
@@ -113,6 +113,7 @@ C all outputs start out zero (MIXERT zeroes what it passes in)
       IF(ARR.EQ.'PEQEL') V=PEQEL(IROW,I)
       IF(ARR.EQ.'PEQIN') V=PEQIN(IROW,I)
       IF(ARR.EQ.'QION') V=QION(IROW,I)
+      IF(ARR.EQ.'PEQION') V=PEQION(IROW,I)
       IF(ARR.EQ.'QATT') V=QATT(IROW,I)
    30 WRITE(6,31) EG(I),V
    31 FORMAT(1X,F12.5,' EV ',1P,E14.6)

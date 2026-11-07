@@ -41,3 +41,15 @@ MB-33    B      deck  arco2cf4_thermal              ICOLL(3,0) written (MIXERT I
 MB-37    B      deck  ar_bperp_thermal              XST(1000001) written (MONTEBT, NCOLM=2000000)
 MB-40    P      deck  sf6_bperp                     NaN attachment rate from TOFG (B perp E, no ionisation)
 MB-43    T      deck  sf6_thermal                   NaN from DSQRT of -1E-16 at a turning point (MONTEFDT, SF6 50 kV/cm thermal)
+MB-44    P      xsec  7 2 400.0 'QIN' 2 8           Xe 1S4 resonance replaced by the 4D tail above 100 eV
+MB-45    P      xsec  61 2 4.0 'QIN' 7 8            CCl4 V3 superelastic 1E-35 at all energies
+MB-46    P      xsec  31 2 0.3 'QIN' 2 8            NH3 J 0->1 weighted with the J=1 population
+MB-47    P      deck  c4f7n                         C4F7N with the mass of C3F4H2
+MB-48    P      xsec  44 2 1000.0 'QION' 1 8        TMA K-shells counted twice below 803 eV
+MB-49    P      xsec  29 2 1000.0 'QION' 11 8       C2F6 carbon K-shell constant (last interval)
+MB-50    P      xsec  29 2 4.0 'PEQIN' 7 8          C2F6 V6 dipole vibration isotropic (0)
+MB-51    P      xsec  60 2 12.0 'QIN' 27 8          SiH4 level 27 zero at 11.25 eV (tested on EIN(28))
+MB-52    P      xsec  7 2 400.0 'PEQIN' 25 8        Xe 2P3 isotropic (0)
+MB-53    P      xsec  15 2 400.0 'QIN' 72 8         O2 level 72 tail from level 71's table
+MB-55    P      xsec  4 2 1000.0 'QIN' 17 8         He-3 4 1F spike at 700 eV (typo 78.27D-5)
+MB-56    P      xsec  25 2 4.0 'QIN' 1 8            DME J=1 population weighted 2J-1
