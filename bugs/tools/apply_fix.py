@@ -474,5 +474,12 @@ elif fx=='MB-56':
          ['    4 PJ(K)=(2.0*AK+1.0)*DEXP(-AK*(AK+1.0)*B0/AKT)'],
          ['MB-56: WAS (2.0*AK-1.0); THE DEGENERACY OF J IS 2J+1 (J=0 ENTERS',
           'THE SUM BELOW AS 1; CO, METHANOL, ETHANOL, PROPANOLS USE 2J+1)'])
+elif fx=='MB-57':
+    s,e=body('SETUPT')
+    i=next(k for k in range(s,e) if L[k].startswith('  999 WRITE(6,87)'))
+    assert L[i+3].rstrip()=='      RETURN',L[i+1:i+4]
+    c=['C NIMBOLTZ FIX MB-57: STOP ON AN INPUT ERROR AS SETUP DOES (LAST',
+       'C               STAYED 0 AND THE RUN WENT ON WITH NMAX, TMAX ETC. UNSET)']
+    L[i+3:i+3]=c+['      LAST=1']
 else: sys.exit('unknown fix')
 open(F,'w').write('\n'.join(L))

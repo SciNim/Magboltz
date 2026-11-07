@@ -2762,6 +2762,9 @@ C   METRES PER PICOSECOND
   999 WRITE(6,87) NGAS,(J,NGASN(J),FRAC(J),J=1,6) 
    87 FORMAT(3(/),4X,' ERROR IN GAS INPUT : NGAS=',I5,6(/,2X,' N=',I3,' 
      /NGAS=',I5,' FRAC=',F8.3))                                         
+C NIMBOLTZ FIX MB-57: STOP ON AN INPUT ERROR AS SETUP DOES (LAST
+C               STAYED 0 AND THE RUN WENT ON WITH NMAX, TMAX ETC. UNSET)
+      LAST=1
       RETURN                                                            
       END                                                               
       SUBROUTINE PRNTERT                                                

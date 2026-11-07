@@ -53,3 +53,4 @@ MB-52    P      xsec  7 2 400.0 'PEQIN' 25 8        Xe 2P3 isotropic (0)
 MB-53    P      xsec  15 2 400.0 'QIN' 72 8         O2 level 72 tail from level 71's table
 MB-55    P      xsec  4 2 1000.0 'QIN' 17 8         He-3 4 1F spike at 700 eV (typo 78.27D-5)
 MB-56    P      xsec  25 2 4.0 'QIN' 1 8            DME J=1 population weighted 2J-1
+MB-57    P      deck  badfrac_thermal               thermal run continues after ERROR IN GAS INPUT (SETUPT)

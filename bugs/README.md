@@ -2,7 +2,7 @@
 
 Source: `magboltz-11.21.f` (S. Biagi; the program prints `VERSION 11.20`),
 branch `master` of this repository. Line numbers below refer to that file.
-Branch `fixes` has one commit per defect (`MB-01` … `MB-56`); every change,
+Branch `fixes` has one commit per defect (`MB-01` … `MB-57`); every change,
 except the 281 loop starts of MB-10, carries a `C NIMBOLTZ FIX MB-nn:` comment.
 Cases where the intended behaviour is not clear from the code are not
 changed; they are listed as questions in `QUESTIONS.md`.
@@ -78,6 +78,7 @@ a guess, this is said explicitly ("Interpretation").
 | MB-54 | GAS45, GAS49, GAS61 | HFO-1234ze, C4F7N, CCl4 | debug output left on | every run | 4000 lines (GAS45, 49) or one line (GAS61) printed per call |
 | MB-55 | GAS4 | He-3 | stray digit `78.27D-5` | 650–750 eV | levels 17, 25 ×10.7 at 700 eV |
 | MB-56 | GAS25 | DME | degeneracy `2J-1` for `2J+1` | always | rotational populations wrong (J=1 ×0.4); mean energy −7 % at 0.1–1 kV/cm when fixed (with MB-53) |
+| MB-57 | SETUPT | any, thermal | missing `LAST=1` after the input error | invalid gas input with ITHRM=1 | run continues with NMAX, TMAX etc. unset; meaningless results (drift 0, error NaN) instead of a stop |
 
 Affected gases (cross sections or angular distributions): Xe (7), propane
 (10), isobutane (11, diagnostic only), H2O (14), O2 (15), N2O (18,
@@ -940,6 +941,17 @@ of a rotational level J is 2J+1; the sum below starts with 1 for J=0, as
 Effect with MB-53 (DME, upstream → fixed): mean energy −7.2 % (± 0.2 %)
 at 100 V/cm and 1 kV/cm, drift −3.9 % (± 0.8 %) at 1 kV/cm, unchanged at
 10 kV/cm.
+
+### MB-57 SETUPT: thermal runs go on after an input error
+
+SETUPT (line 2762) prints `ERROR IN GAS INPUT` for NGAS outside 1–6, a
+missing gas or share, or shares that do not add up to 100 %, and returns
+with LAST still 0 (READIN set it), so MAGBOLTZ continues the thermal run:
+NMAX is not scaled, TMAX, NSTEP and the start values are not set, and the
+run prints a full output of zeros and NaN (drift velocity 0, error NaN for
+Ar 50 % / CO2 40 %, deck `decks/badfrac_thermal.in`). SETUP (gas at 0 K)
+sets `99 LAST=1` there and the program stops. Fix: `LAST=1` before the
+RETURN, as in SETUP.
 
 ## Inconsistencies left unchanged
 
