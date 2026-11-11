@@ -100,4 +100,7 @@ formula of the cross section (0.750 × Born dipole factor of EIN(5)) is
 unchanged, so the level now also has the dipole cross section of a
 0.025 eV transition (threshold, magnitude). Is level
 5 meant to be a moderation level, or is 0.024999 a stand-in for the VIB3
-energy? Magboltz++ keeps 0.1499.
+energy? Magboltz++ keeps 0.1499. The choice matters: Ar/CF3Br 90/10,
+1 kV/cm, 20 °C, thermal, 4·10⁷ collisions: drift 64.09 µm/ns and mean
+energy 0.107 eV with 0.024999 (Fortran 11.21, and Magboltz++ patched to
+0.024999), 53.10 µm/ns and 0.888 eV with 0.1499 (Magboltz++).
