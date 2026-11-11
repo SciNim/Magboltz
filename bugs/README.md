@@ -2,7 +2,7 @@
 
 Source: `magboltz-11.21.f` (S. Biagi; the program prints `VERSION 11.20`),
 branch `master` of this repository. Line numbers below refer to that file.
-Branch `fixes` has one commit per defect (`MB-01` … `MB-57`); every change,
+Branch `fixes` has one commit per defect (`MB-01` … `MB-58`); every change,
 except the 281 loop starts of MB-10, carries a `C NIMBOLTZ FIX MB-nn:` comment.
 Cases where the intended behaviour is not clear from the code are not
 changed; they are listed as questions in `QUESTIONS.md`.
@@ -79,6 +79,7 @@ a guess, this is said explicitly ("Interpretation").
 | MB-55 | GAS4 | He-3 | stray digit `78.27D-5` | 650–750 eV | levels 17, 25 ×10.7 at 700 eV |
 | MB-56 | GAS25 | DME | degeneracy `2J-1` for `2J+1` | always | rotational populations wrong (J=1 ×0.4); mean energy −7 % at 0.1–1 kV/cm when fixed (with MB-53) |
 | MB-57 | SETUPT | any, thermal | missing `LAST=1` after the input error | invalid gas input with ITHRM=1 | run continues with NMAX, TMAX etc. unset; meaningless results (drift 0, error NaN) instead of a stop |
+| MB-58 | MONTE*, MONTEF* (18 routines) | H2S, TMA | moderation test by a tolerance of 1E-4 eV | every collision with the 0.025 eV level | the electron keeps 0.025 eV instead of losing 0.025 eV: drift −25 % (Ar/H2S), +50 % (Ar/TMA) |
 
 Affected gases (cross sections or angular distributions): Xe (7), propane
 (10), isobutane (11, diagnostic only), H2O (14), O2 (15), N2O (18,
@@ -92,6 +93,7 @@ gases (MB-31) every thermal calculation at high field (MB-34, MB-36) and every t
 B⊥E calculation with the long decorrelation length (MB-37), and
 thermal calculations with HFO-1234ze, C4F7N or CF3Br (MB-38), and
 the printed attachment rate of B⊥E SST/TOF runs without ionisation (MB-40),
+every calculation with H2S or TMA (MB-58),
 thermal B = 0 SST/TOF runs near the critical field (MB-41, MB-43), and the
 Townsend errors left in /CTWNER/ by every SST/TOF run with B ≠ 0 (MB-42).
 The gas-routine series MB-44 … MB-56 adds He-3 (4), Xe (7), ethane (9),
@@ -101,6 +103,21 @@ C2H2F4 (43), TMA (44), HFO-1234ze (45, output only), C4F7N (49), C3F8
 (52), SiH4 (60) and CCl4 (61).
 
 ## Impact on results
+
+**H2S and TMA (MB-58) change transport results by tens of percent.** The
+moderation test of 11.20 (`ABS(EI-0.024999).LE.1D-4`) also catches the
+ordinary 0.025 eV levels of H2S (rotation R1) and TMA (level 2). An
+electron that excites them is left with 0.025 eV. 20 °C, 760 Torr, 0 K
+gas, 4·10⁷ collisions, upstream → fixed:
+
+| gas, E | drift (µm/ns) | mean energy (eV) |
+|---|---|---|
+| Ar/H2S 90/10, 1 kV/cm | 29.62 → 39.51 (+33 %) | 0.1725 → 0.4192 |
+| H2S, 10 kV/cm | 36.42 → 59.55 (+64 %) | 0.1984 → 0.5269 |
+| Ar/TMA 90/10, 1 kV/cm | 71.63 → 47.82 (−33 %) | 0.3255 → 0.6899 |
+
+The fixed values agree with Magboltz++ 44b54a0, which has an exact test
+that never fires (and so also misses the real moderation levels).
 
 **SF6 (MB-17 + MB-22) changes transport results.** Level 2 of GAS30 is the
 V4 dipole vibration, marked anisotropic (KIN(2)=1). Its forward-scattering
@@ -952,6 +969,35 @@ run prints a full output of zeros and NaN (drift velocity 0, error NaN for
 Ar 50 % / CO2 40 %, deck `decks/badfrac_thermal.in`). SETUP (gas at 0 K)
 sets `99 LAST=1` there and the program stops. Fix: `LAST=1` before the
 RETURN, as in SETUP.
+
+### MB-58 MONTE routines: moderation test catches other 0.025 eV levels
+
+Since 11.20 a collision with the energy loss 0.024999 eV (vibration
+moderation: GAS45 HFO-1234ze level 13, line 83344; GAS49 C4F7N level 13,
+line 92906; GAS51 CF3Br level 5, line 94468) takes all of the energy
+but 0.024999 eV. The 18 MONTE and MONTEF routines (MONTE 11933, MONTEA
+12405, MONTEB 12792, MONTEC 13223, MONTEFT 14298, MONTEFD 14959,
+MONTEFTG 16022, MONTEFTH 16762, MONTEFTA 17489 and the thermal versions
+MONTET 3026, MONTEAT 3526, MONTEBT 3928, MONTECT 4381, MONTEFTT 5565,
+MONTEFDT 6421, MONTEFTGT 7633, MONTEFTHT 8576, MONTEFTAT 9544) recognise
+the level by its energy:
+
+    IF(ABS(EI-0.024999).LE.1D-4) EI=E-0.024999
+
+The tolerance also matches the 0.025 eV levels of GAS44 (TMA, level 2,
+`EIN(2)=0.025`, line 82062) and GAS55 (H2S rotation R1, level 2, line
+96779): every such excitation leaves the electron with 0.025 eV instead
+of removing 0.025 eV. (A scan of all 80 gases at EFINAL = 10⁵ eV finds
+no other level within 1E-4 eV; the nearest, H2O level 107 at 0.0251 eV,
+misses by 1E-6 eV.) In 11.19 the test was `IF(EI.EQ.AKT)`, which no
+level met. For the effect see "Impact on results": H2S and TMA mixtures
+change drift velocity by about a third, pure H2S at 10 kV/cm by 64 %.
+
+Fix: MIXER and MIXERT mark the levels whose energy loss is exactly
+0.024999 (the value written in the gas routine) in new COMMON blocks
+/MODLV/ and /MODLVT/, and the 18 routines test the mark instead of the
+energy. With the fix the three cases above give output identical to a
+build with the tolerance reduced to 3E-7. GAS45/49/51 are unchanged.
 
 ## Inconsistencies left unchanged
 

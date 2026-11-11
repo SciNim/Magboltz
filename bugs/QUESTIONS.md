@@ -4,7 +4,7 @@ Things found while porting the gas routines (and the rest of the program)
 where the code looks inconsistent but the intended behaviour cannot be
 read off the code. Nothing here is changed in branch `fixes` or in the Nim
 port; both reproduce upstream. Line numbers refer to `magboltz-11.21.f` on
-branch `master`. Clear defects are in `README.md` (MB-01 … MB-56).
+branch `master`. Clear defects are in `README.md` (MB-01 … MB-58).
 
 Each entry: what the code does, the possible readings, and what would
 change. Mark an entry when answered and move it to README.md if it turns
@@ -91,3 +91,13 @@ in GAS30 and GAS53 (the attachment is only in QATT, which MIXER reads);
 GAS14 SUMTRP adds QIN(230) (a dipole) instead of QIN(241); GAS25 Q(1)
 leaves out the excitations 61-110. MIXER sums Q(1) into QTOT, which no
 routine reads. Should Q(1) always be the total?
+
+Q-14. **GAS51 CF3Br level 5**: 11.19 has `EIN(5)=0.1499`, `SCRPT(11)=' VIB3
+ELOSS= 0.1499 '`; 11.20/11.21 have `EIN(5)=0.024999` (line 94468) with
+the same label, so the level is now a moderation level (the electron keeps
+0.024999 eV), while GAS45 and GAS49 label theirs `VIB MODERATION`. The
+formula of the cross section (0.750 × Born dipole factor of EIN(5)) is
+unchanged, so the level now also has the dipole cross section of a
+0.025 eV transition (threshold, magnitude). Is level
+5 meant to be a moderation level, or is 0.024999 a stand-in for the VIB3
+energy? Magboltz++ keeps 0.1499.

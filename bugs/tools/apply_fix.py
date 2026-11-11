@@ -481,5 +481,36 @@ elif fx=='MB-57':
     c=['C NIMBOLTZ FIX MB-57: STOP ON AN INPUT ERROR AS SETUP DOES (LAST',
        'C               STAYED 0 AND THE RUN WENT ON WITH NMAX, TMAX ETC. UNSET)']
     L[i+3:i+3]=c+['      LAST=1']
+elif fx=='MB-58':
+    # the gas routines mark a moderation level by EIN=0.024999 (REAL*4, as
+    # written in GAS45, GAS49, GAS51); MIXER/MIXERT flag it before EIN is
+    # divided by RGAS, MONTE* test the flag instead of |EI-0.024999|<=1D-4
+    for r,com,zero in (('MIXER','      COMMON/MODLV/MODLVL(960)',
+                        ['      DO 9580 I=1,960',' 9580 MODLVL(I)=0']),
+                       ('MIXERT','      COMMON/MODLVT/MODLVT(6,300)',
+                        ['      DO 9580 I=1,300','      DO 9580 K=1,6',' 9580 MODLVT(K,I)=0'])):
+        edit(r,'      IMPLICIT INTEGER*8 (I-N)',['      IMPLICIT INTEGER*8 (I-N)',com],
+             ['MB-58: 1 FOR A MODERATION LEVEL (ENERGY LOSS = E - 0.024999)'])
+        edit(r,'      NISO=0',zero+['      NISO=0'],['MB-58: NO LEVEL IS A MODERATION LEVEL UNLESS MARKED BELOW'])
+        for n in range(1,7):
+            if r=='MIXER':
+                old='      EIN(NP)=EI%d(J)/RGAS%d'%(n,n)
+                flag='      IF(EI%d(J).EQ.0.024999) MODLVL(NP)=1'%n
+            else:
+                old='       EIN(KGAS,NP)=EI%d(J)/RGAS%d'%(n,n)
+                flag='       IF(EI%d(J).EQ.0.024999) MODLVT(KGAS,NP)=1'%n
+            edit(r,old,[old,flag],
+                 ['MB-58: THE GAS ROUTINE GIVES A MODERATION LEVEL THE ENERGY','LOSS 0.024999 (EXACTLY, IN SINGLE PRECISION)'])
+    old='      IF(ABS(EI-0.024999).LE.1D-4) THEN'
+    for r in ('MONTE','MONTEA','MONTEB','MONTEC','MONTEFT','MONTEFD','MONTEFTG','MONTEFTH','MONTEFTA'):
+        edit(r,'      IMPLICIT INTEGER*8 (I-N)',['      IMPLICIT INTEGER*8 (I-N)','      COMMON/MODLV/MODLVL(960)'],
+             ['MB-58: MODERATION LEVELS, SET IN MIXER'])
+        edit(r,old,['      IF(MODLVL(I).EQ.1) THEN'],
+             ['MB-58: WAS IF(ABS(EI-0.024999).LE.1D-4), WHICH ALSO CAUGHT THE','ORDINARY 0.025 EV LEVELS OF H2S AND TMA'])
+    for r in ('MONTET','MONTEAT','MONTEBT','MONTECT','MONTEFTT','MONTEFDT','MONTEFTGT','MONTEFTHT','MONTEFTAT'):
+        edit(r,'      IMPLICIT INTEGER*8 (I-N)',['      IMPLICIT INTEGER*8 (I-N)','      COMMON/MODLVT/MODLVT(6,300)'],
+             ['MB-58: MODERATION LEVELS, SET IN MIXERT'])
+        edit(r,old,['      IF(MODLVT(KGAS,I).EQ.1) THEN'],
+             ['MB-58: WAS IF(ABS(EI-0.024999).LE.1D-4), WHICH ALSO CAUGHT THE','ORDINARY 0.025 EV LEVELS OF H2S AND TMA'])
 else: sys.exit('unknown fix')
 open(F,'w').write('\n'.join(L))
