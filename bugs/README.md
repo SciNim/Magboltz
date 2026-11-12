@@ -1060,6 +1060,16 @@ quantities). Magboltz++ tests each channel on its own table.
 
 ## Inconsistencies left unchanged
 
+- GAS12 CO2, superelastic vibrations above their tables (lines 39288,
+  39328, 39367, 39406, 39446): `Y*X*(EN+EIN)/(EN*EN)`, the
+  detailed-balance factor E′/E times the 1/E tail taken at E instead of
+  at E′. The table branch, (E′/E)·σ(E′), meets it with a step of E′/E
+  at the table end (2.6 % for 3V2 at 10 eV, less for the others);
+  (E′/E)·Y·X/E′ = Y·X/E would be continuous (Magboltz++ has that). The
+  levels carry the thermal populations of their lower states (3.8 % for
+  V2, below 0.2 % for the others), so the effect is far below the
+  statistical errors; unlike MB-59 the form is not contradicted by a
+  comment.
 - When the energy loss exceeds the energy (`E.LT.EI`) just before the
   scattering angle is computed, MONTEFT, MONTEFD, MONTEFTG and MONTEFTH
   set `EI=0.0D0`, while MONTEFTA has that statement commented out and
