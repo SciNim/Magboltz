@@ -524,5 +524,9 @@ elif fx=='MB-60':
              ['      IF(EN.LT.XATT(1)) GO TO 290','      IF(EN.GT.XATT(NATT1)) GO TO 290'],
              ['MB-60: NO ATTACHMENT ABOVE THE TABLE (AS IN GAS21/GAS47); THE',
               'LAST INTERVAL WAS EXTRAPOLATED, 4D-19 CM**2 AT 4 KEV'])
+elif fx=='MB-61':
+    edit('GAS31','      IF(EN.LE.XION4(1)) GO TO 90',['      IF(EN.LE.XION4(1)) GO TO 55'],
+         ['MB-61: WAS GO TO 90, WHICH ALSO SKIPPED THE H+ AND H2+ CHANNELS',
+          '5 AND 6 (FROM 23 AND 26 EV) BELOW THE N+ THRESHOLD OF 28 EV'])
 else: sys.exit('unknown fix')
 open(F,'w').write('\n'.join(L))
