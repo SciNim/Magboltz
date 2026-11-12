@@ -2,7 +2,7 @@
 
 Source: `magboltz-11.21.f` (S. Biagi; the program prints `VERSION 11.20`),
 branch `master` of this repository. Line numbers below refer to that file.
-Branch `fixes` has one commit per defect (`MB-01` … `MB-58`); every change,
+Branch `fixes` has one commit per defect (`MB-01` … `MB-61`); every change,
 except the 281 loop starts of MB-10, carries a `C NIMBOLTZ FIX MB-nn:` comment.
 Cases where the intended behaviour is not clear from the code are not
 changed; they are listed as questions in `QUESTIONS.md`.
@@ -80,6 +80,9 @@ a guess, this is said explicitly ("Interpretation").
 | MB-56 | GAS25 | DME | degeneracy `2J-1` for `2J+1` | always | rotational populations wrong (J=1 ×0.4); mean energy −7 % at 0.1–1 kV/cm when fixed (with MB-53) |
 | MB-57 | SETUPT | any, thermal | missing `LAST=1` after the input error | invalid gas input with ITHRM=1 | run continues with NMAX, TMAX etc. unset; meaningless results (drift 0, error NaN) instead of a stop |
 | MB-58 | MONTE*, MONTEF* (18 routines) | H2S, TMA | moderation test by a tolerance of 1E-4 eV | every collision with the 0.025 eV level | the electron keeps 0.025 eV instead of losing 0.025 eV: drift −25 % (Ar/H2S), +50 % (Ar/TMA) |
+| MB-59 | GAS14 | H2O | extra `/EN` in the superelastic tail | EN > 19.8 eV | V2-bend superelastic falls as 1/E² above 20 eV (1/20 of the table at its end); weighted by the 4·10⁻⁴ (010) population, no visible effect |
+| MB-60 | GAS22, GAS48 | D2, ortho-D2 | no upper end test | EN > 20 eV | attachment extrapolated linearly, 4·10⁻¹⁹ cm² at 4 keV: attachment coefficient ×4 at 100 kV/cm |
+| MB-61 | GAS31 | NH3 | one threshold test also skips two later channels | 23–28 eV | no H⁺ and H2⁺ ionisation below the N⁺ threshold of 28 eV; transport unchanged within errors |
 
 Affected gases (cross sections or angular distributions): Xe (7), propane
 (10), isobutane (11, diagnostic only), H2O (14), O2 (15), N2O (18,
@@ -93,7 +96,8 @@ gases (MB-31) every thermal calculation at high field (MB-34, MB-36) and every t
 B⊥E calculation with the long decorrelation length (MB-37), and
 thermal calculations with HFO-1234ze, C4F7N or CF3Br (MB-38), and
 the printed attachment rate of B⊥E SST/TOF runs without ionisation (MB-40),
-every calculation with H2S or TMA (MB-58),
+every calculation with H2S or TMA (MB-58), high-field calculations
+with D2, ortho-D2 or NH3 (MB-60, MB-61),
 thermal B = 0 SST/TOF runs near the critical field (MB-41, MB-43), and the
 Townsend errors left in /CTWNER/ by every SST/TOF run with B ≠ 0 (MB-42).
 The gas-routine series MB-44 … MB-56 adds He-3 (4), Xe (7), ethane (9),
@@ -233,6 +237,12 @@ NaN-initialised memory (MB-19/20).
    of their partner, N2 copies level 121's distribution to 122–127, CO
    level 111 uses the offset of 112, which has the same |EIN|).
    Found MB-44 … MB-56.
+9. **Comparison with Magboltz++** (the C++ translation by H. Schindler,
+   gitlab.cern.ch/garfield/magboltzpp, 44b54a0, with its own defects
+   fixed): the cross-section tables of the 61 gases both have, at EFINAL
+   = 1, 40, 400 and 4000 eV, and the 96 MC decks. Every difference was
+   traced to one side. Found MB-58 … MB-61 (MB-59: Magboltz++ had
+   already corrected it).
 
 **AddressSanitizer / UBSan / valgrind.** Run afterwards for comparison:
 upstream built with `-fsanitize=address,undefined` on all decks of
@@ -998,6 +1008,55 @@ Fix: MIXER and MIXERT mark the levels whose energy loss is exactly
 /MODLV/ and /MODLVT/, and the 18 routines test the mark instead of the
 energy. With the fix the three cases above give output identical to a
 build with the tolerance reduced to 3E-7. GAS45/49/51 are unchanged.
+
+### MB-59 GAS14 (H2O): superelastic bend tail falls as 1/E²
+
+Line 42202, the V2 bend superelastic (level 211) above its table, i.e.
+for EN+EIN(212) > XVIB1(NVIB1) = 20 eV:
+
+    173 QIN(211,I)=YVIB1(NVIB1)*(XVIB1(NVIB1)/(EN+EIN(212)))/EN
+
+The comment above the block reads "DIPOLE 1/E FALL OFF ABOVE ENERGY OF
+XVIB1(NVIB1) EV", the table branch is the detailed-balance form
+(E′/E)·σ(E′) with E′ = EN+EIN(212), and the inelastic partner QIN(212)
+falls as Y·X/EN (line 42219). Detailed balance with that tail gives
+(E′/E)·Y·X/E′ = Y·X/E; the extra division by EN makes it Y·X/(E′·E):
+1/20 of the table branch at the table end, and 1/E². Fix:
+`QIN(211,I)=YVIB1(NVIB1)*XVIB1(NVIB1)/EN`, continuous at 20 eV. The
+level is weighted by the population of the (010) state, APOPV1 ≈ 4·10⁻⁴
+at 20 °C, so the H2O decks of the regression give identical output.
+Magboltz++ made the same change (its commit b30a1e6).
+
+### MB-60 GAS22, GAS48 (D2, ortho-D2): attachment extrapolated above the table
+
+Lines 58151 and 91352 test only the lower end of the attachment table
+(`IF(EN.LT.XATT(1)) GO TO 290`); above XATT(NATT1) = 20 eV the search
+loop ends with J=NATT1 and the last interval (18–20 eV, rising from
+1.6 to 1.8·10⁻²¹ cm²) is extrapolated: 3.8·10⁻²¹ cm² at 40 eV,
+1.0·10⁻¹⁹ at 1 keV, 4.0·10⁻¹⁹ at 4 keV, far above the 6·10⁻²¹ cm² peak
+of the table. GAS21 and GAS47 (H2, para-H2), with the same table, test
+`IF(EN.GT.XATT(NATT1)) GO TO 250` (lines 55423, 88655) and add only
+their separate high-energy (2Σu) term. Fix: the same test, to 290.
+Pure D2, 20 °C, 760 Torr, 8·10⁷ collisions: at 100 kV/cm the
+attachment coefficient goes from 0.126 to 0.030 /cm (±15 %;
+ionisation 1883 /cm, drift 784.9 µm/ns, unchanged); at 30 kV/cm
+0.087 → 0.080 /cm, within the error. Magboltz++ stops at the table end.
+
+### MB-61 GAS31 (NH3): H⁺ and H2⁺ ionisation start at 28 eV
+
+Lines 69130–69237 compute the ionisation channels in table order; each
+starts with `IF(EN.LE.XIONn(1)) GO TO 90`, which also leaves all later
+channels. That presumes ascending thresholds, but channel 4 (N⁺,
+XION4(1) = 28.0 eV, line 69166) comes before channels 5 (H⁺, 23.0 eV)
+and 6 (H2⁺, 26.0 eV): from 23 to 28 eV the test of channel 4 skips both.
+Fix: channel 4 jumps to the H⁺ section (label 55); the later channels
+all start higher. A scan of all gas routines for such chains (a
+threshold below an earlier one, same jump target) finds only this one
+and the nitrogen K-shell of GAS49, which is not used at all (Q-04).
+The two channels are small below 28 eV (H⁺ 6.3·10⁻¹⁹ cm² at 27.5 eV):
+pure NH3, 20 °C, 760 Torr, 8·10⁷ collisions gives identical output at
+30 kV/cm and agrees within errors at 100 kV/cm (χ²/n = 0.12 over 18
+quantities). Magboltz++ tests each channel on its own table.
 
 ## Inconsistencies left unchanged
 

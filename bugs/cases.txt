@@ -55,3 +55,6 @@ MB-55    P      xsec  4 2 1000.0 'QIN' 17 8         He-3 4 1F spike at 700 eV (t
 MB-56    P      xsec  25 2 4.0 'QIN' 1 8            DME J=1 population weighted 2J-1
 MB-57    P      deck  badfrac_thermal               thermal run continues after ERROR IN GAS INPUT (SETUPT)
 MB-58    P      deck  ar_h2s                        Ar/H2S drift 29.6 (upstream; 0.025 eV level moderated) vs 39.5 um/ns
+MB-59    P      xsec  14 2 400.0 'QIN' 211 8        H2O bend superelastic tail 1/E**2 above 20 eV
+MB-60    P      xsec  22 2 4000.0 'QATT' 1 8        D2 attachment rising linearly above 20 eV
+MB-61    P      xsec  31 2 40.0 'QION' 5 8          NH3 H+ ionisation 0 from 23 to 28 eV

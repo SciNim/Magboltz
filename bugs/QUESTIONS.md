@@ -4,7 +4,7 @@ Things found while porting the gas routines (and the rest of the program)
 where the code looks inconsistent but the intended behaviour cannot be
 read off the code. Nothing here is changed in branch `fixes` or in the Nim
 port; both reproduce upstream. Line numbers refer to `magboltz-11.21.f` on
-branch `master`. Clear defects are in `README.md` (MB-01 … MB-58).
+branch `master`. Clear defects are in `README.md` (MB-01 … MB-61).
 
 Each entry: what the code does, the possible readings, and what would
 change. Mark an entry when answered and move it to README.md if it turns
@@ -104,3 +104,12 @@ energy? Magboltz++ keeps 0.1499. The choice matters: Ar/CF3Br 90/10,
 1 kV/cm, 20 °C, thermal, 4·10⁷ collisions: drift 64.09 µm/ns and mean
 energy 0.107 eV with 0.024999 (Fortran 11.21, and Magboltz++ patched to
 0.024999), 53.10 µm/ns and 0.888 eV with 0.1499 (Magboltz++).
+
+Q-15. **GAS24 methylal above 1 keV**: every table (elastic, ionisation,
+three vibrations, two excitations) ends at 1000 eV, and the search loops
+extrapolate their last interval without an upper end test (from line
+62393 on). The vibrations become negative just above 1 keV
+(−1.1·10⁻²¹ cm²), the elastic cross section at 1.2 keV, the total at
+1.8 keV (−1.4·10⁻¹⁵ cm² at 4 keV). Other gases continue their tables
+with 1/E, 1/E² or Born-Bethe tails; Magboltz++ sets 0 above the tables.
+Which continuation is intended? (Reached only with EFINAL > 1 keV.)
