@@ -518,5 +518,11 @@ elif fx=='MB-59':
          ['MB-59: WAS YVIB1(NVIB1)*(XVIB1(NVIB1)/(EN+EIN(212)))/EN, A 1/E**2',
           'TAIL 1/20 OF THE TABLE BRANCH AT 20 EV; DIPOLE 1/E AS IN THE',
           'COMMENT ABOVE AND IN DETAILED BALANCE WITH QIN(212)'])
+elif fx=='MB-60':
+    for g in ('GAS22','GAS48'):
+        edit(g,'      IF(EN.LT.XATT(1)) GO TO 290',
+             ['      IF(EN.LT.XATT(1)) GO TO 290','      IF(EN.GT.XATT(NATT1)) GO TO 290'],
+             ['MB-60: NO ATTACHMENT ABOVE THE TABLE (AS IN GAS21/GAS47); THE',
+              'LAST INTERVAL WAS EXTRAPOLATED, 4D-19 CM**2 AT 4 KEV'])
 else: sys.exit('unknown fix')
 open(F,'w').write('\n'.join(L))

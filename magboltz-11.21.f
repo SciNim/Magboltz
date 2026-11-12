@@ -58544,7 +58544,11 @@ C------------------------------------------------------------------
 C  ATTACHMENT                                                                     
   200 Q(4,I)=0.0  
       QATT(1,I)=Q(4,I)                                                 
-      IF(EN.LT.XATT(1)) GO TO 290                                       
+C NIMBOLTZ FIX MB-60: NO ATTACHMENT ABOVE THE TABLE (AS IN
+C               GAS21/GAS47); THE LAST INTERVAL WAS EXTRAPOLATED, 4D-19
+C               CM**2 AT 4 KEV
+      IF(EN.LT.XATT(1)) GO TO 290
+      IF(EN.GT.XATT(NATT1)) GO TO 290
       DO 210 J=2,NATT1                                                  
       IF(EN.LE.XATT(J)) GO TO 220                                       
   210 CONTINUE                                                          
@@ -91838,7 +91842,11 @@ C------------------------------------------------------------------
 C  ATTACHMENT                                                                     
   200 Q(4,I)=0.0  
       QATT(1,I)=Q(4,I)                                                 
-      IF(EN.LT.XATT(1)) GO TO 290                                       
+C NIMBOLTZ FIX MB-60: NO ATTACHMENT ABOVE THE TABLE (AS IN
+C               GAS21/GAS47); THE LAST INTERVAL WAS EXTRAPOLATED, 4D-19
+C               CM**2 AT 4 KEV
+      IF(EN.LT.XATT(1)) GO TO 290
+      IF(EN.GT.XATT(NATT1)) GO TO 290
       DO 210 J=2,NATT1                                                  
       IF(EN.LE.XATT(J)) GO TO 220                                       
   210 CONTINUE                                                          
