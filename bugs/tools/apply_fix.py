@@ -512,5 +512,11 @@ elif fx=='MB-58':
              ['MB-58: MODERATION LEVELS, SET IN MIXERT'])
         edit(r,old,['      IF(MODLVT(KGAS,I).EQ.1) THEN'],
              ['MB-58: WAS IF(ABS(EI-0.024999).LE.1D-4), WHICH ALSO CAUGHT THE','ORDINARY 0.025 EV LEVELS OF H2S AND TMA'])
+elif fx=='MB-59':
+    edit('GAS14','  173 QIN(211,I)=YVIB1(NVIB1)*(XVIB1(NVIB1)/(EN+EIN(212)))/EN',
+         ['  173 QIN(211,I)=YVIB1(NVIB1)*XVIB1(NVIB1)/EN'],
+         ['MB-59: WAS YVIB1(NVIB1)*(XVIB1(NVIB1)/(EN+EIN(212)))/EN, A 1/E**2',
+          'TAIL 1/20 OF THE TABLE BRANCH AT 20 EV; DIPOLE 1/E AS IN THE',
+          'COMMENT ABOVE AND IN DETAILED BALANCE WITH QIN(212)'])
 else: sys.exit('unknown fix')
 open(F,'w').write('\n'.join(L))
